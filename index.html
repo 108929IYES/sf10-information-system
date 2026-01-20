@@ -1,4 +1,4 @@
-html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -24,10 +24,13 @@ html>
             const [searchFirst, setSearchFirst] = useState('');
             const [searchMiddle, setSearchMiddle] = useState('');
             const [searchLast, setSearchLast] = useState('');
+            const [searchLRN, setSearchLRN] = useState('');
+            const [searchMethod, setSearchMethod] = useState('name'); // 'name' or 'lrn'
             const [result, setResult] = useState(null);
             const [showLogin, setShowLogin] = useState(false);
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
+            const [noMiddleName, setNoMiddleName] = useState(false);
             
             // Admin states
             const [adminView, setAdminView] = useState('search'); // 'search', 'add', 'edit', 'list'
@@ -51,15 +54,79 @@ html>
             };
 
             const searchPublic = async () => {
+                if(searchMethod === 'lrn') {
+                    // Search by LRN
+                    const lrn = searchLRN.trim();
+                    if(!lrn) { 
+                        setResult({error: 'Please enter LRN'}); 
+                        return; 
+                    }
+                    setLoading(true);
+                    try {
+                        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&lrn=${lrn}`);
+                        const data = await res.json();
+                        
+                        if(data.success && data.data.length > 0) {
+                            setResult({students: data.data});
+                        } else {
+                            setResult({error: 'No record found with this LRN'});
+                        }
+                    } catch(e) { setResult({error: 'Search error'}); }
+                    setLoading(false);
+                } else {
+                    // Search by Name
+                    const f = searchFirst.trim().toLowerCase();
+                    const l = searchLast.trim().toLowerCase();
+                    if(!f && !l) { 
+                        setResult({error: 'Please enter at least first name or last name'}); 
+                        return; 
+                    }
+                    setLoading(true);
+                    try {
+                        const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&firstName=${f}&lastName=${l}`);
+                        const data = await res.json();
+                        
+                        if(data.success && data.data.length > 0) {
+                            // Check if multiple records
+                            if(data.data.length > 1) {
+                                setResult({multiple: true, students: data.data});
+                            } else {
+                                setResult({students: data.data});
+                            }
+                        } else {
+                            setResult({error: 'No record found'});
+                        }
+                    } catch(e) { setResult({error: 'Search error'}); }
+                    setLoading(false);
+                }
+            };
+
+            const searchWithMiddleName = async () => {
                 const f = searchFirst.trim().toLowerCase();
                 const l = searchLast.trim().toLowerCase();
-                if(!f && !l) { setResult({error: 'Enter name'}); return; }
+                const m = noMiddleName ? '' : searchMiddle.trim().toLowerCase();
+                
                 setLoading(true);
                 try {
-                    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&firstName=${f}&lastName=${l}`);
+                    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&firstName=${f}&middleName=${m}&lastName=${l}`);
                     const data = await res.json();
-                    setResult(data.success && data.data.length > 0 ? {students: data.data} : {error: 'Not found'});
-                } catch(e) { setResult({error: 'Error'}); }
+                    
+                    if(data.success && data.data.length > 0) {
+                        // Filter based on middle name or no middle name
+                        let filtered = data.data;
+                        if(noMiddleName) {
+                            filtered = data.data.filter(s => !s.middleName || s.middleName.trim() === '' || s.middleName.toUpperCase() === 'N/A');
+                        }
+                        
+                        if(filtered.length > 0) {
+                            setResult({students: filtered});
+                        } else {
+                            setResult({error: 'No matching record found'});
+                        }
+                    } else {
+                        setResult({error: 'No record found'});
+                    }
+                } catch(e) { setResult({error: 'Search error'}); }
                 setLoading(false);
             };
 
@@ -84,7 +151,7 @@ html>
 
             const add = async () => {
                 if(!newStudent.firstName || !newStudent.lastName || !newStudent.dateOfBirth || !newStudent.lrn || !newStudent.schoolYear) {
-                    alert('Fill required fields'); return;
+                    alert('Please fill all required fields'); return;
                 }
                 setLoading(true);
                 try {
@@ -117,7 +184,7 @@ html>
 
             const updateStudent = async () => {
                 if(!editStudent.firstName || !editStudent.lastName || !editStudent.dateOfBirth || !editStudent.lrn || !editStudent.schoolYear) {
-                    alert('Fill required fields'); return;
+                    alert('Please fill all required fields'); return;
                 }
                 setLoading(true);
                 try {
@@ -153,8 +220,16 @@ html>
                 setAdminView('search');
             };
 
+            const resetPublicSearch = () => {
+                setSearchFirst('');
+                setSearchMiddle('');
+                setSearchLast('');
+                setSearchLRN('');
+                setNoMiddleName(false);
+                setResult(null);
+            };
+
             const startAddNew = () => {
-                // Pre-fill name fields from search
                 setNewStudent({
                     firstName: searchFirst.trim(), 
                     middleName: searchMiddle.trim(), 
@@ -178,7 +253,7 @@ html>
             if(!isAdmin) {
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4">
-                        {loading && <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow">Loading...</div>}
+                        {loading && <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50">Loading...</div>}
                         <div className="max-w-4xl mx-auto">
                             <div className="text-center mb-8">
                                 <img src="logo.png" className="w-32 h-32 mx-auto mb-4" onError={(e) => e.target.style.display='none'} />
@@ -187,19 +262,144 @@ html>
                                 <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
                             </div>
                             <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-                                <h3 className="text-2xl font-semibold mb-4 text-center">Search SF10 Record</h3>
-                                <input type="text" value={searchFirst} onChange={(e) => setSearchFirst(e.target.value)} placeholder="First Name" className="w-full p-3 border-2 rounded mb-3" onKeyPress={(e) => e.key === 'Enter' && searchPublic()} />
-                                <input type="text" value={searchLast} onChange={(e) => setSearchLast(e.target.value)} placeholder="Last Name" className="w-full p-3 border-2 rounded mb-3" onKeyPress={(e) => e.key === 'Enter' && searchPublic()} />
-                                <button onClick={searchPublic} className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700">Search</button>
+                                <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10 Record</h3>
+                                
+                                {/* Search Method Radio Buttons */}
+                                <div className="mb-6">
+                                    <label className="block mb-3 font-medium text-gray-700">Search Method:</label>
+                                    <div className="flex gap-6">
+                                        <label className="flex items-center cursor-pointer">
+                                            <input 
+                                                type="radio" 
+                                                name="searchMethod" 
+                                                value="name"
+                                                checked={searchMethod === 'name'}
+                                                onChange={(e) => setSearchMethod(e.target.value)}
+                                                className="w-4 h-4 mr-2"
+                                            />
+                                            <span className="text-gray-700">Search by Name</span>
+                                        </label>
+                                        <label className="flex items-center cursor-pointer">
+                                            <input 
+                                                type="radio" 
+                                                name="searchMethod" 
+                                                value="lrn"
+                                                checked={searchMethod === 'lrn'}
+                                                onChange={(e) => setSearchMethod(e.target.value)}
+                                                className="w-4 h-4 mr-2"
+                                            />
+                                            <span className="text-gray-700">Search by LRN</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Conditional Fields */}
+                                {searchMethod === 'name' ? (
+                                    <>
+                                        <input 
+                                            type="text" 
+                                            value={searchFirst} 
+                                            onChange={(e) => setSearchFirst(e.target.value)} 
+                                            placeholder="First Name" 
+                                            className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none" 
+                                            onKeyPress={(e) => e.key === 'Enter' && searchPublic()} 
+                                        />
+                                        <input 
+                                            type="text" 
+                                            value={searchLast} 
+                                            onChange={(e) => setSearchLast(e.target.value)} 
+                                            placeholder="Last Name" 
+                                            className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none" 
+                                            onKeyPress={(e) => e.key === 'Enter' && searchPublic()} 
+                                        />
+                                    </>
+                                ) : (
+                                    <input 
+                                        type="text" 
+                                        value={searchLRN} 
+                                        onChange={(e) => setSearchLRN(e.target.value)} 
+                                        placeholder="Enter LRN (12 digits)" 
+                                        className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none" 
+                                        maxLength="12"
+                                        onKeyPress={(e) => e.key === 'Enter' && searchPublic()} 
+                                    />
+                                )}
+                                
+                                <button onClick={searchPublic} className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                                    🔍 Search
+                                </button>
                             </div>
-                            {result && (
+                            
+                            {/* MULTIPLE RECORDS FOUND - ASK FOR MIDDLE NAME */}
+                            {result && result.multiple && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setResult(null)}>
-                                    <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                    <div className="bg-white rounded-xl max-w-lg w-full p-8" onClick={(e) => e.stopPropagation()}>
+                                        <div className="text-center mb-6">
+                                            <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-3 rounded-lg mb-4">
+                                                <h3 className="text-2xl font-bold">⚠ Multiple Records Found</h3>
+                                            </div>
+                                            <p className="text-gray-700 mb-2">We found <strong>{result.students.length} students</strong> with the name:</p>
+                                            <p className="text-xl font-bold text-blue-600 mb-4">{searchFirst} {searchLast}</p>
+                                            <p className="text-gray-600">Please enter your middle name to identify the correct record.</p>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block mb-2 font-medium">Middle Name</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={searchMiddle} 
+                                                    onChange={(e) => {
+                                                        setSearchMiddle(e.target.value);
+                                                        if(e.target.value) setNoMiddleName(false);
+                                                    }}
+                                                    placeholder="Enter your middle name" 
+                                                    className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none"
+                                                    disabled={noMiddleName}
+                                                    onKeyPress={(e) => e.key === 'Enter' && !noMiddleName && searchWithMiddleName()}
+                                                />
+                                            </div>
+                                            
+                                            <div className="flex items-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    id="noMiddleName" 
+                                                    checked={noMiddleName}
+                                                    onChange={(e) => {
+                                                        setNoMiddleName(e.target.checked);
+                                                        if(e.target.checked) setSearchMiddle('');
+                                                    }}
+                                                    className="w-4 h-4 mr-2"
+                                                />
+                                                <label htmlFor="noMiddleName" className="text-gray-700 cursor-pointer">
+                                                    I don't have a middle name
+                                                </label>
+                                            </div>
+                                            
+                                            <button 
+                                                onClick={searchWithMiddleName} 
+                                                className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                                                Search Again
+                                            </button>
+                                            <button 
+                                                onClick={() => setResult(null)} 
+                                                className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* SINGLE RECORD OR ERROR */}
+                            {result && !result.multiple && (
+                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={resetPublicSearch}>
+                                    <div className="bg-white rounded-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                                         {result.error ? (
                                             <div className="p-8 text-center">
-                                                <h3 className="text-2xl font-bold mb-4">No Record Found</h3>
-                                                <p className="mb-4">{result.error}</p>
-                                                <button onClick={() => setResult(null)} className="bg-blue-600 text-white px-6 py-2 rounded">Close</button>
+                                                <h3 className="text-2xl font-bold mb-4 text-red-600">No Record Found</h3>
+                                                <p className="mb-4 text-gray-700">{result.error}</p>
+                                                <button onClick={resetPublicSearch} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Close</button>
                                             </div>
                                         ) : (
                                             result.students.map((s, i) => (
@@ -209,40 +409,81 @@ html>
                                                         <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
                                                         <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
                                                     </div>
-                                                    <div className="space-y-4">
-                                                        <div className="bg-blue-50 p-4 rounded"><strong>First Name:</strong> <div className="text-2xl font-bold">{s.firstName}</div></div>
-                                                        <div className="bg-blue-50 p-4 rounded"><strong>Middle Name:</strong> <div className="text-2xl font-bold">{s.middleName || 'N/A'}</div></div>
-                                                        <div className="bg-blue-50 p-4 rounded"><strong>Last Name:</strong> <div className="text-2xl font-bold">{s.lastName}</div></div>
-                                                        <div className="bg-purple-50 p-4 rounded"><strong>Date of Birth:</strong> <div className="text-xl font-bold">{new Date(s.dateOfBirth).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div></div>
-                                                        <div className="bg-yellow-50 p-4 rounded"><strong>LRN:</strong> <div className="text-xl font-bold">{s.lrn}</div></div>
-                                                        <div className="bg-blue-50 p-4 rounded"><strong>School Year:</strong> <div className="text-2xl font-bold">{s.schoolYear}</div></div>
-                                                        <div className="bg-blue-50 p-4 rounded"><strong>Status:</strong> <div><span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold`}>{s.status}</span></div></div>
-                                                        {(s.sf10IssuedTo || s.sf10DateSent || s.sf10ReferenceNumber) && (
-                                                            <div className="bg-indigo-50 p-4 rounded">
-                                                                <h4 className="font-bold mb-2">SF10 Transfer Info</h4>
-                                                                {s.sf10IssuedTo && <div className="mb-2"><strong>Issued To:</strong> {s.sf10IssuedTo}</div>}
-                                                                {s.sf10DateSent && <div className="mb-2"><strong>Date Sent:</strong> {new Date(s.sf10DateSent).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>}
-                                                                {s.sf10ReferenceNumber && <div><strong>Reference #:</strong> {s.sf10ReferenceNumber}</div>}
+                                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                                        <div className="bg-blue-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">First Name:</strong>
+                                                            <div className="text-2xl font-bold mt-1">{s.firstName}</div>
+                                                        </div>
+                                                        <div className="bg-blue-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">Middle Name:</strong>
+                                                            <div className="text-2xl font-bold mt-1">{s.middleName || 'N/A'}</div>
+                                                        </div>
+                                                        <div className="bg-blue-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">Last Name:</strong>
+                                                            <div className="text-2xl font-bold mt-1">{s.lastName}</div>
+                                                        </div>
+                                                        <div className="bg-purple-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">Date of Birth:</strong>
+                                                            <div className="text-xl font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+                                                        </div>
+                                                        <div className="bg-yellow-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">LRN:</strong>
+                                                            <div className="text-xl font-bold mt-1">{s.lrn}</div>
+                                                        </div>
+                                                        <div className="bg-blue-50 p-4 rounded">
+                                                            <strong className="text-sm text-gray-600">School Year Last Attended:</strong>
+                                                            <div className="text-2xl font-bold mt-1">{s.schoolYear}</div>
+                                                        </div>
+                                                        <div className="bg-green-50 p-4 rounded col-span-2">
+                                                            <strong className="text-sm text-gray-600">Status:</strong>
+                                                            <div className="mt-2">
+                                                                <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-lg`}>{s.status}</span>
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                    <button onClick={() => setResult(null)} className="w-full mt-6 bg-blue-600 text-white p-3 rounded font-semibold">Close</button>
+                                                    {(s.sf10IssuedTo || s.sf10DateSent || s.sf10ReferenceNumber) && (
+                                                        <div className="bg-indigo-50 p-5 rounded mb-6">
+                                                            <h4 className="font-bold mb-3 text-lg">SF10 Transfer Information</h4>
+                                                            <div className="grid grid-cols-3 gap-4">
+                                                                {s.sf10IssuedTo && (
+                                                                    <div>
+                                                                        <strong className="text-sm text-gray-600">Issued To:</strong>
+                                                                        <div className="font-semibold mt-1">{s.sf10IssuedTo}</div>
+                                                                    </div>
+                                                                )}
+                                                                {s.sf10DateSent && (
+                                                                    <div>
+                                                                        <strong className="text-sm text-gray-600">Date Sent:</strong>
+                                                                        <div className="font-semibold mt-1">{new Date(s.sf10DateSent).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+                                                                    </div>
+                                                                )}
+                                                                {s.sf10ReferenceNumber && (
+                                                                    <div>
+                                                                        <strong className="text-sm text-gray-600">Reference #:</strong>
+                                                                        <div className="font-semibold mt-1">{s.sf10ReferenceNumber}</div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    <button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
                                                 </div>
                                             ))
                                         )}
                                     </div>
                                 </div>
                             )}
-                            <div className="text-center"><button onClick={() => setShowLogin(true)} className="text-gray-500 text-sm">Administrator Access</button></div>
+                            
+                            <div className="text-center"><button onClick={() => setShowLogin(true)} className="text-gray-500 text-sm hover:text-gray-700">Administrator Access</button></div>
                             {showLogin && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
                                         <h3 className="text-xl font-bold mb-4">Admin Login</h3>
-                                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full p-2 border-2 rounded mb-2" onKeyPress={(e) => e.key === 'Enter' && (password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password'))} />
+                                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full p-2 border-2 rounded mb-2 focus:border-blue-500 outline-none" onKeyPress={(e) => e.key === 'Enter' && (password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password'))} />
                                         {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
                                         <div className="flex gap-2">
-                                            <button onClick={() => password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password')} className="flex-1 bg-blue-600 text-white p-2 rounded">Login</button>
-                                            <button onClick={() => (setShowLogin(false), setPassword(''), setError(''))} className="flex-1 bg-gray-300 p-2 rounded">Cancel</button>
+                                            <button onClick={() => password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password')} className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">Login</button>
+                                            <button onClick={() => (setShowLogin(false), setPassword(''), setError(''))} className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 transition">Cancel</button>
                                         </div>
                                     </div>
                                 </div>
@@ -263,7 +504,7 @@ html>
                                 <h1 className="text-2xl font-bold">SF10 Information System - Admin</h1>
                                 <p>Ilayang Yuni Elementary School</p>
                             </div>
-                            <button onClick={() => setIsAdmin(false)} className="bg-white text-blue-600 px-4 py-2 rounded font-semibold">Logout</button>
+                            <button onClick={() => setIsAdmin(false)} className="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition">Logout</button>
                         </div>
 
                         {/* Statistics */}
@@ -277,15 +518,15 @@ html>
                         <div className="mb-6 flex gap-2">
                             <button 
                                 onClick={resetAdminSearch} 
-                                className={`px-6 py-3 rounded font-semibold ${adminView === 'search' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}>
+                                className={`px-6 py-3 rounded font-semibold transition ${adminView === 'search' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 hover:bg-blue-50'}`}>
                                 🔍 Search Student
                             </button>
                             <button 
                                 onClick={() => setAdminView('list')} 
-                                className={`px-6 py-3 rounded font-semibold ${adminView === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'}`}>
+                                className={`px-6 py-3 rounded font-semibold transition ${adminView === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 hover:bg-blue-50'}`}>
                                 📋 View All Records
                             </button>
-                            <button onClick={loadData} className="bg-green-600 text-white px-6 py-3 rounded font-semibold ml-auto">↻ Refresh Data</button>
+                            <button onClick={loadData} className="bg-green-600 text-white px-6 py-3 rounded font-semibold ml-auto hover:bg-green-700 transition">↻ Refresh Data</button>
                         </div>
 
                         {/* SEARCH VIEW */}
@@ -331,7 +572,7 @@ html>
                                         </div>
                                         <button 
                                             onClick={searchAdmin} 
-                                            className="w-full bg-blue-600 text-white p-4 rounded-lg font-semibold text-lg hover:bg-blue-700">
+                                            className="w-full bg-blue-600 text-white p-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition">
                                             🔍 Search Student
                                         </button>
                                     </div>
@@ -355,13 +596,13 @@ html>
                                             <div><strong>Full Name:</strong> {student.firstName} {student.middleName} {student.lastName}</div>
                                             <div><strong>LRN:</strong> {student.lrn}</div>
                                             <div><strong>Date of Birth:</strong> {new Date(student.dateOfBirth).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
-                                            <div><strong>School Year:</strong> {student.schoolYear}</div>
+                                            <div><strong>School Year Last Attended:</strong> {student.schoolYear}</div>
                                             <div><strong>Status:</strong> <span className={`px-3 py-1 rounded ${statusColor(student.status)}`}>{student.status}</span></div>
                                             {student.sf10IssuedTo && <div><strong>SF10 Issued To:</strong> {student.sf10IssuedTo}</div>}
                                         </div>
                                         <button 
                                             onClick={() => startUpdate(student)} 
-                                            className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700">
+                                            className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
                                             📝 Update This Record
                                         </button>
                                     </div>
@@ -369,7 +610,7 @@ html>
 
                                 <button 
                                     onClick={resetAdminSearch} 
-                                    className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400">
+                                    className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
                                     ← Back to Search
                                 </button>
                             </div>
@@ -389,12 +630,12 @@ html>
                                 <div className="max-w-md mx-auto space-y-3">
                                     <button 
                                         onClick={startAddNew} 
-                                        className="w-full bg-green-600 text-white p-4 rounded-lg font-semibold text-lg hover:bg-green-700">
+                                        className="w-full bg-green-600 text-white p-4 rounded-lg font-semibold text-lg hover:bg-green-700 transition">
                                         ➕ Add New Record
                                     </button>
                                     <button 
                                         onClick={resetAdminSearch} 
-                                        className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400">
+                                        className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
                                         ← Search Again
                                     </button>
                                 </div>
@@ -406,25 +647,25 @@ html>
                             <div className="bg-white rounded-lg p-6 shadow">
                                 <h3 className="text-2xl font-bold mb-6 text-center">➕ Add New Student Record</h3>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={newStudent.firstName} onChange={(e) => setNewStudent({...newStudent, firstName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Middle Name</label><input type="text" value={newStudent.middleName} onChange={(e) => setNewStudent({...newStudent, middleName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={newStudent.lastName} onChange={(e) => setNewStudent({...newStudent, lastName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={newStudent.dateOfBirth} onChange={(e) => setNewStudent({...newStudent, dateOfBirth: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">LRN *</label><input type="text" value={newStudent.lrn} onChange={(e) => setNewStudent({...newStudent, lrn: e.target.value})} className="w-full p-2 border-2 rounded" maxLength="12" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">School Year *</label><select value={newStudent.schoolYear} onChange={(e) => setNewStudent({...newStudent, schoolYear: e.target.value})} className="w-full p-2 border-2 rounded"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Status *</label><select value={newStudent.status} onChange={(e) => setNewStudent({...newStudent, status: e.target.value})} className="w-full p-2 border-2 rounded"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select></div>
+                                    <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={newStudent.firstName} onChange={(e) => setNewStudent({...newStudent, firstName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={newStudent.middleName} onChange={(e) => setNewStudent({...newStudent, middleName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={newStudent.lastName} onChange={(e) => setNewStudent({...newStudent, lastName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={newStudent.dateOfBirth} onChange={(e) => setNewStudent({...newStudent, dateOfBirth: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">LRN * (or N/A if none)</label><input type="text" value={newStudent.lrn} onChange={(e) => setNewStudent({...newStudent, lrn: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" maxLength="12" placeholder="N/A" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><select value={newStudent.schoolYear} onChange={(e) => setNewStudent({...newStudent, schoolYear: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Status *</label><select value={newStudent.status} onChange={(e) => setNewStudent({...newStudent, status: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select></div>
                                 </div>
                                 <div className="bg-indigo-50 p-4 rounded mb-4">
                                     <h4 className="font-semibold mb-2">SF10 Transfer Info (Optional)</h4>
                                     <div className="grid grid-cols-3 gap-3">
-                                        <div><label className="block mb-1 text-sm">Issued To</label><input type="text" value={newStudent.sf10IssuedTo} onChange={(e) => setNewStudent({...newStudent, sf10IssuedTo: e.target.value})} className="w-full p-2 border rounded" placeholder="School/Institution" /></div>
-                                        <div><label className="block mb-1 text-sm">Date Sent</label><input type="date" value={newStudent.sf10DateSent} onChange={(e) => setNewStudent({...newStudent, sf10DateSent: e.target.value})} className="w-full p-2 border rounded" /></div>
-                                        <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={newStudent.sf10ReferenceNumber} onChange={(e) => setNewStudent({...newStudent, sf10ReferenceNumber: e.target.value})} className="w-full p-2 border rounded" placeholder="e.g. REF-2025-001" /></div>
+                                        <div><label className="block mb-1 text-sm">Issued To</label><input type="text" value={newStudent.sf10IssuedTo} onChange={(e) => setNewStudent({...newStudent, sf10IssuedTo: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Institution" /></div>
+                                        <div><label className="block mb-1 text-sm">Date Sent</label><input type="date" value={newStudent.sf10DateSent} onChange={(e) => setNewStudent({...newStudent, sf10DateSent: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                                        <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={newStudent.sf10ReferenceNumber} onChange={(e) => setNewStudent({...newStudent, sf10ReferenceNumber: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. REF-2025-001" /></div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={add} className="flex-1 bg-green-600 text-white px-6 py-3 rounded font-semibold hover:bg-green-700">✓ Save New Record</button>
-                                    <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400">Cancel</button>
+                                    <button onClick={add} className="flex-1 bg-green-600 text-white px-6 py-3 rounded font-semibold hover:bg-green-700 transition">✓ Save New Record</button>
+                                    <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400 transition">Cancel</button>
                                 </div>
                             </div>
                         )}
@@ -439,25 +680,25 @@ html>
                                     <p><strong>LRN:</strong> {editStudent.lrn}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={editStudent.firstName} onChange={(e) => setEditStudent({...editStudent, firstName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Middle Name</label><input type="text" value={editStudent.middleName || ''} onChange={(e) => setEditStudent({...editStudent, middleName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={editStudent.lastName} onChange={(e) => setEditStudent({...editStudent, lastName: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={editStudent.dateOfBirth} onChange={(e) => setEditStudent({...editStudent, dateOfBirth: e.target.value})} className="w-full p-2 border-2 rounded" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">LRN *</label><input type="text" value={editStudent.lrn} onChange={(e) => setEditStudent({...editStudent, lrn: e.target.value})} className="w-full p-2 border-2 rounded" maxLength="12" /></div>
-                                    <div><label className="block mb-1 text-sm font-medium">School Year *</label><select value={editStudent.schoolYear} onChange={(e) => setEditStudent({...editStudent, schoolYear: e.target.value})} className="w-full p-2 border-2 rounded"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
-                                    <div><label className="block mb-1 text-sm font-medium">Status *</label><select value={editStudent.status} onChange={(e) => setEditStudent({...editStudent, status: e.target.value})} className="w-full p-2 border-2 rounded"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select></div>
+                                    <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={editStudent.firstName} onChange={(e) => setEditStudent({...editStudent, firstName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={editStudent.middleName || ''} onChange={(e) => setEditStudent({...editStudent, middleName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={editStudent.lastName} onChange={(e) => setEditStudent({...editStudent, lastName: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={editStudent.dateOfBirth} onChange={(e) => setEditStudent({...editStudent, dateOfBirth: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">LRN * (or N/A if none)</label><input type="text" value={editStudent.lrn} onChange={(e) => setEditStudent({...editStudent, lrn: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" maxLength="12" placeholder="N/A" /></div>
+                                    <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><select value={editStudent.schoolYear} onChange={(e) => setEditStudent({...editStudent, schoolYear: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
+                                    <div><label className="block mb-1 text-sm font-medium">Status *</label><select value={editStudent.status} onChange={(e) => setEditStudent({...editStudent, status: e.target.value})} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select></div>
                                 </div>
                                 <div className="bg-indigo-50 p-4 rounded mb-4">
                                     <h4 className="font-semibold mb-2">SF10 Transfer Info (Optional)</h4>
                                     <div className="grid grid-cols-3 gap-3">
-                                        <div><label className="block mb-1 text-sm">Issued To</label><input type="text" value={editStudent.sf10IssuedTo || ''} onChange={(e) => setEditStudent({...editStudent, sf10IssuedTo: e.target.value})} className="w-full p-2 border rounded" placeholder="School/Institution" /></div>
-                                        <div><label className="block mb-1 text-sm">Date Sent</label><input type="date" value={editStudent.sf10DateSent || ''} onChange={(e) => setEditStudent({...editStudent, sf10DateSent: e.target.value})} className="w-full p-2 border rounded" /></div>
-                                        <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={editStudent.sf10ReferenceNumber || ''} onChange={(e) => setEditStudent({...editStudent, sf10ReferenceNumber: e.target.value})} className="w-full p-2 border rounded" placeholder="e.g. REF-2025-001" /></div>
+                                        <div><label className="block mb-1 text-sm">Issued To</label><input type="text" value={editStudent.sf10IssuedTo || ''} onChange={(e) => setEditStudent({...editStudent, sf10IssuedTo: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Institution" /></div>
+                                        <div><label className="block mb-1 text-sm">Date Sent</label><input type="date" value={editStudent.sf10DateSent || ''} onChange={(e) => setEditStudent({...editStudent, sf10DateSent: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                                        <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={editStudent.sf10ReferenceNumber || ''} onChange={(e) => setEditStudent({...editStudent, sf10ReferenceNumber: e.target.value})} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. REF-2025-001" /></div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={updateStudent} className="flex-1 bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700">✓ Update Record</button>
-                                    <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400">Cancel</button>
+                                    <button onClick={updateStudent} className="flex-1 bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">✓ Update Record</button>
+                                    <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400 transition">Cancel</button>
                                 </div>
                             </div>
                         )}
@@ -473,7 +714,7 @@ html>
                                         <tr>
                                             <th className="p-3 text-left text-xs font-semibold">Name</th>
                                             <th className="p-3 text-left text-xs font-semibold">LRN</th>
-                                            <th className="p-3 text-left text-xs font-semibold">School Year</th>
+                                            <th className="p-3 text-left text-xs font-semibold">School Year Last Attended</th>
                                             <th className="p-3 text-left text-xs font-semibold">Status</th>
                                             <th className="p-3 text-left text-xs font-semibold">SF10 Location</th>
                                             <th className="p-3 text-left text-xs font-semibold">Actions</th>
