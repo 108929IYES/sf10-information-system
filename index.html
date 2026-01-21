@@ -227,15 +227,31 @@
                 if (!uploadedFile) return null;
 
                 setUploadProgress('Uploading...');
-                const formData = new FormData();
-                formData.append('action', 'uploadFile');
-                formData.append('file', uploadedFile);
-
+                
                 try {
+                    // Convert file to base64
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                            const base64 = reader.result.split(',')[1];
+                            resolve(base64);
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(uploadedFile);
+                    });
+
+                    // Send to Google Apps Script
+                    const formData = new URLSearchParams();
+                    formData.append('action', 'uploadFile');
+                    formData.append('fileData', base64Data);
+                    formData.append('fileName', uploadedFile.name);
+                    formData.append('mimeType', uploadedFile.type);
+
                     const res = await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         body: formData
                     });
+                    
                     const data = await res.json();
 
                     if (data.success) {
