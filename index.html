@@ -240,6 +240,13 @@
                         reader.readAsDataURL(uploadedFile);
                     });
 
+                    // DEBUG: Check data
+                    console.log('=== UPLOAD DEBUG ===');
+                    console.log('File name:', uploadedFile.name);
+                    console.log('File type:', uploadedFile.type);
+                    console.log('Base64 length:', base64Data ? base64Data.length : 'NULL');
+                    console.log('Base64 preview:', base64Data ? base64Data.substring(0, 50) : 'NULL');
+
                     // Send to Google Apps Script
                     const formData = new URLSearchParams();
                     formData.append('action', 'uploadFile');
@@ -247,12 +254,15 @@
                     formData.append('fileName', uploadedFile.name);
                     formData.append('mimeType', uploadedFile.type);
 
+                    console.log('Sending to server...');
+
                     const res = await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
                         body: formData
                     });
                     
                     const data = await res.json();
+                    console.log('Server response:', data);
 
                     if (data.success) {
                         setUploadProgress('Upload successful!');
@@ -262,10 +272,12 @@
                         return null;
                     }
                 } catch (e) {
+                    console.error('Upload error:', e);
                     setUploadProgress('Upload error: ' + e.message);
                     return null;
                 }
             };
+
 
             const add = async () => {
                 if (!newStudent.firstName || !newStudent.lastName || !newStudent.dateOfBirth || !newStudent.lrn || !newStudent.schoolYear) {
@@ -1232,3 +1244,4 @@
     </script>
 </body>
 </html>
+
