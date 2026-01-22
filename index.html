@@ -692,122 +692,7 @@
                                                         </div>
                                                     </div>
 
-                                                    {/* Row 2: LRN and DOB */}
-                                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-yellow-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">LRN:</strong>
-                                                            <div className="text-xl font-bold mt-1">{s.lrn}</div>
-                                                        </div>
-                                                        <div className="bg-purple-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">Date of Birth:</strong>
-                                                            <div className="text-xl font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Row 3: School Year and Grade */}
-                                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">School Year Last Attended:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.schoolYear}</div>
-                                                        </div>
-                                                        <div className="bg-indigo-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">Grade Last Attended:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Status */}
-                                                    <div className="bg-green-50 p-4 rounded mb-4">
-                                                        <strong className="text-xs text-gray-600">Status:</strong>
-                                                        <div className="mt-2">
-                                                            <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-lg`}>{s.status}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* SF10 RECEIPT LOG */}
-{(s.sf10DateReceived || s.sf10ReceivedFrom || s.sf10EndorsedTo || s.sf10DateEndorsed || s.sf10CopyReceived) && (
-    <div className="bg-teal-50 p-3 rounded mb-3">
-        <h4 className="font-bold mb-2 text-sm">SF10 RECEIPT LOG</h4>
-        <div className="grid grid-cols-3 gap-3 text-xs">
-            {s.sf10CopyReceived && (
-                <div>
-                    <strong className="text-gray-600">Copy Received:</strong>
-                    <div className="font-semibold mt-1">{s.sf10CopyReceived}</div>
-                </div>
-            )}
-            {s.sf10DateReceived && (
-                <div>
-                    <strong className="text-gray-600">Date Received:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-            {s.sf10ReceivedFrom && (
-                <div>
-                    <strong className="text-gray-600">Received From:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReceivedFrom}</div>
-                </div>
-            )}
-            {s.sf10EndorsedTo && (
-                <div>
-                    <strong className="text-gray-600">Endorsed To:</strong>
-                    <div className="font-semibold mt-1">{s.sf10EndorsedTo}</div>
-                </div>
-            )}
-            {s.sf10DateEndorsed && (
-                <div>
-                    <strong className="text-gray-600">Date Endorsed:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-        </div>
-    </div>
-)}
-
-                                                    {/* SF10 RELEASE LOG */}
-{(s.sf10ReleasedTo || s.sf10ReleaseDate || s.sf10CopyReleased || s.sf10TrackingNumber || s.sf10ReceivedBy || s.sf10ReceivedByDate) && (
-    <div className="bg-orange-50 p-3 rounded mb-3">
-        <h4 className="font-bold mb-2 text-sm">SF10 RELEASE LOG</h4>
-        <div className="grid grid-cols-3 gap-3 text-xs">
-            {s.sf10CopyReleased && (
-                <div>
-                    <strong className="text-gray-600">Copy Released:</strong>
-                    <div className="font-semibold mt-1">{s.sf10CopyReleased}</div>
-                </div>
-            )}
-            {s.sf10ReleaseDate && (
-                <div>
-                    <strong className="text-gray-600">Release Date:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-            {s.sf10ReleasedTo && (
-                <div>
-                    <strong className="text-gray-600">Released To:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReleasedTo}</div>
-                </div>
-            )}
-            {s.sf10TrackingNumber && (
-                <div>
-                    <strong className="text-gray-600">Tracking Number:</strong>
-                    <div className="font-semibold mt-1">{s.sf10TrackingNumber}</div>
-                </div>
-            )}
-            {s.sf10ReceivedBy && (
-                <div>
-                    <strong className="text-gray-600">Received By:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReceivedBy}</div>
-                </div>
-            )}
-            {s.sf10ReceivedByDate && (
-                <div>
-                    <strong className="text-gray-600">Received Date:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-        </div>
-    </div>
-)}
-
+                                                    
                                                     {/* SF10 Availability Message */}
                                                     {(() => {
                                                         const status = getSF10Status(s);
@@ -824,6 +709,38 @@
                                                         );
                                                     })()}
 
+{/* SF10 Availability Message */}
+{(() => {
+    const status = getSF10Status(s);
+    return (
+        <div className={`${status.color} p-3 rounded mb-3`}>
+            <div className="flex items-start gap-2">
+                <span className="text-2xl">{status.icon}</span>
+                <div className="flex-1">
+                    <p className="font-bold text-sm mb-1">{status.message}</p>
+                    <p className="text-xs text-gray-700">{status.sub}</p>
+                </div>
+            </div>
+        </div>
+    );
+})()}
+
+{/* Data Privacy Act Notice */}
+<div className="bg-blue-100 border-2 border-blue-300 p-4 rounded mb-4">
+    <div className="flex items-start gap-3">
+        <span className="text-2xl">🔒</span>
+        <div className="flex-1">
+            <p className="font-bold text-sm text-blue-800 mb-1">Data Privacy Notice</p>
+            <p className="text-xs text-gray-700">
+                In compliance with Republic Act No. 10173 (Data Privacy Act of 2012), 
+                only the student's name and SF10 document availability status are 
+                displayed for public access. For complete student information, 
+                please visit the Principal's Office with valid identification.
+            </p>
+        </div>
+    </div>
+</div>
+                                                    
                                                     <button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
                                                 </div>
                                             ))
@@ -893,7 +810,7 @@
 
                         {/* Developer Credit */}
                         <div className="developer-credit">
-                            Developed by: <strong>ALI VILLAVERDE TELADA</strong>
+                            Copyright © 2026 <strong>ALI VILLAVERDE TELADA</strong>
                         </div>
                     </div>
                 );
@@ -1009,48 +926,186 @@
                     {adminView === 'search' && adminSearchResults.length > 0 && (
                         <div className="bg-white rounded-lg p-6 shadow">
                             {adminSearchResults.map((student, index) => (
-                                <div key={index} className="mb-6 p-6 border-2 rounded-lg">
-                                    <h3 className="text-2xl font-bold mb-4">✓ Record Found</h3>
-                                    <div className="space-y-2 mb-4">
-                                        <div><strong>Full Name:</strong> {student.firstName} {student.middleName} {student.lastName}</div>
-                                        <div><strong>LRN:</strong> {student.lrn}</div>
-                                        <div><strong>Date of Birth:</strong> {new Date(student.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                        <div><strong>School Year Last Attended:</strong> {student.schoolYear}</div>
-                                        <div><strong>Grade Last Attended:</strong> {student.gradeLastAttended || 'N/A'}</div>
-                                        <div><strong>Status:</strong> <span className={`px-3 py-1 rounded ${statusColor(student.status)}`}>{student.status}</span></div>
-{student.sf10DocumentUrl && (
-    <div className="flex items-center gap-2">
-        <strong>SF10 Document:</strong>
-        <button onClick={() => previewPDF(student.sf10DocumentUrl)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
-            📄 View
-        </button>
-        <button onClick={() => printPDF(student.sf10DocumentUrl)} className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition">
-            🖨️ Print
-        </button>
-    </div>
-)}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => startUpdate(student)}
-                                            className="flex-1 bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
-                                            📝 Update This Record
-                                        </button>
-                                        <button
-                                            onClick={() => confirmDelete(student)}
-                                            className="bg-red-600 text-white px-6 p-3 rounded font-semibold hover:bg-red-700 transition">
-                                            🗑️ Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            <button
-                                onClick={resetAdminSearch}
-                                className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
-                                ← Back to Search
-                            </button>
+    <div key={index} className="mb-6 p-6 border-2 rounded-lg bg-white">
+        <h3 className="text-2xl font-bold mb-4 text-blue-600">✓ Record Found</h3>
+        
+        {/* 4 COLUMN GRID */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+            
+            {/* COLUMN 1: PUPIL INFORMATION */}
+            <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                <h4 className="font-bold text-sm mb-3 text-blue-800 border-b-2 border-blue-300 pb-2">👤 PUPIL INFORMATION</h4>
+                <div className="space-y-2 text-sm">
+                    <div>
+                        <strong className="text-xs text-gray-600">Full Name:</strong>
+                        <div className="font-semibold">{student.firstName} {student.middleName} {student.lastName}</div>
+                    </div>
+                    <div>
+                        <strong className="text-xs text-gray-600">LRN:</strong>
+                        <div className="font-semibold">{student.lrn}</div>
+                    </div>
+                    <div>
+                        <strong className="text-xs text-gray-600">Date of Birth:</strong>
+                        <div className="font-semibold">{new Date(student.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    </div>
+                    <div>
+                        <strong className="text-xs text-gray-600">School Year:</strong>
+                        <div className="font-semibold">{student.schoolYear}</div>
+                    </div>
+                    <div>
+                        <strong className="text-xs text-gray-600">Grade:</strong>
+                        <div className="font-semibold">{student.gradeLastAttended || 'N/A'}</div>
+                    </div>
+                    <div>
+                        <strong className="text-xs text-gray-600">Status:</strong>
+                        <div className="mt-1">
+                            <span className={`px-2 py-1 rounded text-xs ${statusColor(student.status)}`}>{student.status}</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* COLUMN 2: SF10 STATUS */}
+            <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
+                <h4 className="font-bold text-sm mb-3 text-green-800 border-b-2 border-green-300 pb-2">📄 SF10 STATUS</h4>
+                <div className="space-y-2 text-sm">
+                    <div>
+                        <strong className="text-xs text-gray-600">Availability:</strong>
+                        <div className="font-semibold">
+                            {!student.sf10CopyReleased ? (
+                                <span className="text-green-600">✅ Original Copy Available</span>
+                            ) : student.sf10CopyReleased === 'Original' ? (
+                                <span className="text-yellow-600">⚠️ Authenticated Copy Only</span>
+                            ) : (
+                                <span className="text-red-600">❌ Copies Released</span>
+                            )}
+                        </div>
+                    </div>
+                    {student.sf10DocumentUrl && (
+                        <div className="mt-3">
+                            <strong className="text-xs text-gray-600 block mb-2">Actions:</strong>
+                            <div className="flex flex-col gap-2">
+                                <button 
+                                    onClick={() => previewPDF(student.sf10DocumentUrl)} 
+                                    className="bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700 transition w-full">
+                                    📄 View Document
+                                </button>
+                                <button 
+                                    onClick={() => printPDF(student.sf10DocumentUrl)} 
+                                    className="bg-green-600 text-white px-3 py-2 rounded text-xs hover:bg-green-700 transition w-full">
+                                    🖨️ Print Document
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {!student.sf10DocumentUrl && (
+                        <div className="text-xs text-gray-500 italic mt-2">No document uploaded</div>
+                    )}
+                </div>
+            </div>
+
+            {/* COLUMN 3: RECEIPT LOG */}
+            <div className="bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
+                <h4 className="font-bold text-sm mb-3 text-teal-800 border-b-2 border-teal-300 pb-2">📥 RECEIPT LOG</h4>
+                <div className="space-y-2 text-sm">
+                    {student.sf10CopyReceived && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Copy Received:</strong>
+                            <div className="font-semibold">{student.sf10CopyReceived}</div>
+                        </div>
+                    )}
+                    {student.sf10DateReceived && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Date Received:</strong>
+                            <div className="font-semibold">{new Date(student.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        </div>
+                    )}
+                    {student.sf10ReceivedFrom && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Received From:</strong>
+                            <div className="font-semibold">{student.sf10ReceivedFrom}</div>
+                        </div>
+                    )}
+                    {student.sf10EndorsedTo && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Endorsed To:</strong>
+                            <div className="font-semibold">{student.sf10EndorsedTo}</div>
+                        </div>
+                    )}
+                    {student.sf10DateEndorsed && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Date Endorsed:</strong>
+                            <div className="font-semibold">{new Date(student.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        </div>
+                    )}
+                    {!student.sf10CopyReceived && !student.sf10DateReceived && !student.sf10ReceivedFrom && !student.sf10EndorsedTo && !student.sf10DateEndorsed && (
+                        <div className="text-xs text-gray-500 italic">No receipt records</div>
+                    )}
+                </div>
+            </div>
+
+            {/* COLUMN 4: RELEASE LOG */}
+            <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+                <h4 className="font-bold text-sm mb-3 text-orange-800 border-b-2 border-orange-300 pb-2">📤 RELEASE LOG</h4>
+                <div className="space-y-2 text-sm">
+                    {student.sf10CopyReleased && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Copy Released:</strong>
+                            <div className="font-semibold">{student.sf10CopyReleased}</div>
+                        </div>
+                    )}
+                    {student.sf10ReleaseDate && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Release Date:</strong>
+                            <div className="font-semibold">{new Date(student.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        </div>
+                    )}
+                    {student.sf10ReleasedTo && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Released To:</strong>
+                            <div className="font-semibold">{student.sf10ReleasedTo}</div>
+                        </div>
+                    )}
+                    {student.sf10TrackingNumber && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Tracking Number:</strong>
+                            <div className="font-semibold">{student.sf10TrackingNumber}</div>
+                        </div>
+                    )}
+                    {student.sf10ReceivedBy && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Received By:</strong>
+                            <div className="font-semibold">{student.sf10ReceivedBy}</div>
+                        </div>
+                    )}
+                    {student.sf10ReceivedByDate && (
+                        <div>
+                            <strong className="text-xs text-gray-600">Received Date:</strong>
+                            <div className="font-semibold">{new Date(student.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                        </div>
+                    )}
+                    {!student.sf10CopyReleased && !student.sf10ReleaseDate && !student.sf10ReleasedTo && !student.sf10TrackingNumber && !student.sf10ReceivedBy && !student.sf10ReceivedByDate && (
+                        <div className="text-xs text-gray-500 italic">No release records</div>
+                    )}
+                </div>
+            </div>
+
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="flex gap-2">
+            <button
+                onClick={() => startUpdate(student)}
+                className="flex-1 bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                📝 Update This Record
+            </button>
+            <button
+                onClick={() => confirmDelete(student)}
+                className="bg-red-600 text-white px-6 p-3 rounded font-semibold hover:bg-red-700 transition">
+                🗑️ Delete
+            </button>
+        </div>
+    </div>
                     )}
 
                     {/* NO RESULTS */}
@@ -1362,5 +1417,6 @@
     </script>
 </body>
 </html>
+
 
 
