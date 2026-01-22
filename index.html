@@ -53,6 +53,13 @@
             const [searchLRN, setSearchLRN] = useState('');
             const [searchMethod, setSearchMethod] = useState('name');
             const [result, setResult] = useState(null);
+            const [showVerification, setShowVerification] = useState(false);
+const [verificationInput, setVerificationInput] = useState('');
+const [attemptsLeft, setAttemptsLeft] = useState(3);
+const [isTimedOut, setIsTimedOut] = useState(false);
+const [countdownTimer, setCountdownTimer] = useState('');
+const [verifiedStudents, setVerifiedStudents] = useState([]);
+const [error, setError] = useState('');
             const [showLogin, setShowLogin] = useState(false);
             const [showForgotPassword, setShowForgotPassword] = useState(false);
             const [password, setPassword] = useState('');
@@ -468,6 +475,78 @@
                 setUploadProgress('');
             };
 
+            const handleVerification = (student) => {
+    // Check if timed out
+    const timeoutKey = `timeout_${student.lrn || student.lastName}`;
+    const timeout = localStorage.getItem(timeoutKey);
+    
+    if (timeout) {
+        const timeoutData = JSON.parse(timeout);
+        if (Date.now() < timeoutData.expiresAt) {
+            setIsTimedOut(true);
+            startCountdown(timeoutData.expiresAt, timeoutKey);
+            return;
+        } else {
+            localStorage.removeItem(timeoutKey);
+            setAttemptsLeft(3);
+        }
+    }
+    
+    // Verify input
+    const isValid = student.lrn && student.lrn !== 'N/A' && student.lrn.trim() !== ''
+        ? verificationInput.trim() === student.lrn.trim()
+        : verificationInput === student.dateOfBirth;
+    
+    if (isValid) {
+        setVerifiedStudents([...verifiedStudents, student.lrn || student.lastName]);
+        setShowVerification(false);
+        setError('');
+        setVerificationInput('');
+        setAttemptsLeft(3);
+        localStorage.removeItem(timeoutKey);
+    } else {
+        const newAttempts = attemptsLeft - 1;
+        setAttemptsLeft(newAttempts);
+        
+        if (newAttempts === 2) {
+            setError('❌ Incorrect. You have 2 more attempts.');
+        } else if (newAttempts === 1) {
+            setError('❌ Incorrect. You have 1 more attempt. Please double-check.');
+        } else if (newAttempts === 0) {
+            const timeoutData = {
+                expiresAt: Date.now() + (2 * 60 * 60 * 1000)
+            };
+            localStorage.setItem(timeoutKey, JSON.stringify(timeoutData));
+            setError('❌ For security purposes, please try again after 2 hours.');
+            setIsTimedOut(true);
+            startCountdown(timeoutData.expiresAt, timeoutKey);
+        }
+    }
+};
+
+const startCountdown = (expiresAt, timeoutKey) => {
+    const interval = setInterval(() => {
+        const remaining = expiresAt - Date.now();
+        
+        if (remaining <= 0) {
+            clearInterval(interval);
+            setIsTimedOut(false);
+            setAttemptsLeft(3);
+            setCountdownTimer('');
+            localStorage.removeItem(timeoutKey);
+        } else {
+            const hours = Math.floor(remaining / (60 * 60 * 1000));
+            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+            const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+            setCountdownTimer(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        }
+    }, 1000);
+};
+
+const isStudentVerified = (student) => {
+    return verifiedStudents.includes(student.lrn || student.lastName);
+};
+            
             const resetPublicSearch = () => {
                 setSearchFirst('');
                 setSearchMiddle('');
@@ -677,55 +756,122 @@
                                                         <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
                                                     </div>
 
-                                                    {/* Row 1: Names */}
-                                                    <div className="grid grid-cols-3 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-2 rounded">
-                                                            <strong className="text-xs text-gray-500">First Name:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.firstName}</div>
-                                                        </div>
-                                                        <div className="bg-blue-50 p-2 rounded">
-                                                            <strong className="text-xs text-gray-500">Middle Name:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
-                                                        </div>
-                                                        <div className="bg-blue-50 p-2 rounded">
-                                                            <strong className="text-xs text-gray-500">Last Name:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.lastName}</div>
-                                                        </div>
-                                                    </div>
+                                                    {/* LIMITED VIEW (Default - No Verification Required) */}
+{!isStudentVerified(s) ? (
+    <>
+        {/* Row 1: Names */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">First Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.firstName}</div>
+            </div>
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Middle Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
+            </div>
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Last Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.lastName}</div>
+            </div>
+        </div>
 
-                                                    {/* Row 2: LRN and DOB */}
-                                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-yellow-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-500">LRN:</strong>
-                                                            <div className="text-base font-bold mt-1">{s.lrn}</div>
-                                                        </div>
-                                                        <div className="bg-purple-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-500">Date of Birth:</strong>
-                                                            <div className="text-base font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                                        </div>
-                                                    </div>
+        {/* Row 2: LRN (Last 4 digits only) */}
+        <div className="bg-yellow-50 p-3 rounded mb-4">
+            <strong className="text-xs text-gray-500">LRN:</strong>
+            <div className="text-base font-bold mt-1">
+                {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' 
+                    ? '****' + s.lrn.slice(-4) 
+                    : 'N/A'}
+            </div>
+        </div>
 
-                                                    {/* Row 3: School Year and Grade */}
-                                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-2 rounded">
-                                                            <strong className="text-xs text-gray-500">School Year Last Attended:</strong>
-                                                            <div className="text-base font-bold mt-1">{s.schoolYear}</div>
-                                                        </div>
-                                                        <div className="bg-indigo-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-500">Grade Last Attended:</strong>
-                                                            <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
-                                                        </div>
-                                                    </div>
+        {/* SF10 Availability Status */}
+        {(() => {
+            const status = getSF10Status(s);
+            return (
+                <div className={`${status.color} p-3 rounded mb-4`}>
+                    <div className="flex items-start gap-2">
+                        <span className="text-2xl">{status.icon}</span>
+                        <div className="flex-1">
+                            <p className="font-bold text-sm mb-1">{status.message}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        })()}
 
-                                                    {/* Status */}
-                                                    <div className="bg-green-50 p-3 rounded mb-4">
-                                                        <strong className="text-xs text-gray-500">Status:</strong>
-                                                        <div className="mt-2">
-                                                            <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-base`}>{s.status}</span>
-                                                        </div>
-                                                    </div>
+        {/* Privacy Notice */}
+        <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded mb-4">
+            <p className="text-sm text-gray-700 mb-3">
+                ℹ️ <strong>Additional information is protected</strong> under the Data Privacy Act of 2012 (RA 10173).
+            </p>
+            <button 
+                onClick={() => {
+                    setShowVerification(true);
+                    setError('');
+                    setVerificationInput('');
+                }}
+                className="w-full bg-blue-600 text-white px-4 py-3 rounded font-semibold hover:bg-blue-700 transition">
+                🔒 View Full Details
+            </button>
+        </div>
+    </>
+) : (
+    <>
+        {/* FULL VIEW (After Verification) */}
+        <div className="bg-green-50 border-2 border-green-500 p-3 rounded mb-4 text-center">
+            <strong className="text-green-800">✓ VERIFIED - COMPLETE RECORD</strong>
+        </div>
 
-                                                    {/* SF10 RECEIPT LOG */}
+        {/* Row 1: Names */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">First Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.firstName}</div>
+            </div>
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Middle Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
+            </div>
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Last Name:</strong>
+                <div className="text-lg font-bold mt-1">{s.lastName}</div>
+            </div>
+        </div>
+
+        {/* Row 2: LRN and DOB (FULL) */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-yellow-50 p-3 rounded">
+                <strong className="text-xs text-gray-500">LRN:</strong>
+                <div className="text-base font-bold mt-1">{s.lrn}</div>
+            </div>
+            <div className="bg-purple-50 p-3 rounded">
+                <strong className="text-xs text-gray-500">Date of Birth:</strong>
+                <div className="text-base font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            </div>
+        </div>
+
+        {/* Row 3: School Year, Grade, and Status (3 columns) */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-blue-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">School Year Last Attended:</strong>
+                <div className="text-base font-bold mt-1">{s.schoolYear}</div>
+            </div>
+            <div className="bg-indigo-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Grade Last Attended:</strong>
+                <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
+            </div>
+            <div className="bg-green-50 p-2 rounded">
+                <strong className="text-xs text-gray-500">Status:</strong>
+                <div className="mt-1">
+                    <span className={`px-3 py-1 rounded ${statusColor(s.status)} font-bold text-sm`}>{s.status}</span>
+                </div>
+            </div>
+        </div>
+    </>
+)}
+
+{/* SF10 RECEIPT LOG */}
 {(s.sf10DateReceived || s.sf10ReceivedFrom || s.sf10EndorsedTo || s.sf10DateEndorsed || s.sf10CopyReceived) && (
     <div className="bg-teal-50 p-2 rounded mb-3">
         <h4 className="font-bold mb-1 text-xs">SF10 RECEIPT LOG</h4>
@@ -825,7 +971,87 @@
                                                         );
                                                     })()}
 
-                                                    <button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
+{/* VERIFICATION MODAL */}
+{showVerification && (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50" onClick={() => setShowVerification(false)}>
+        <div className="bg-white rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold mb-4">🔒 VERIFY YOUR IDENTITY</h3>
+            
+            <p className="text-sm text-gray-700 mb-4">
+                In compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, please verify your identity to view complete information.
+            </p>
+            
+            {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' ? (
+                <>
+                    <label className="block mb-2 font-medium text-sm">Enter your 12-digit LRN:</label>
+                    <input 
+                        type="text" 
+                        value={verificationInput}
+                        onChange={(e) => setVerificationInput(e.target.value)}
+                        maxLength="12"
+                        placeholder="Enter LRN"
+                        className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                        disabled={isTimedOut}
+                    />
+                    <p className="text-xs text-gray-600 mb-4">💡 Tip: Your LRN is found on your report card or school documents.</p>
+                </>
+            ) : (
+                <>
+                    <p className="text-sm text-gray-700 mb-2">This is an older record without LRN.</p>
+                    <label className="block mb-2 font-medium text-sm">Please enter your Date of Birth:</label>
+                    <input 
+                        type="date" 
+                        value={verificationInput}
+                        onChange={(e) => setVerificationInput(e.target.value)}
+                        className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                        disabled={isTimedOut}
+                    />
+                    <p className="text-xs text-gray-600 mb-4">💡 Tip: Enter the exact birth date on your school records.</p>
+                </>
+            )}
+            
+            {error && <p className="text-red-600 text-sm mb-3 font-semibold">{error}</p>}
+            
+            {attemptsLeft < 3 && !isTimedOut && (
+                <p className="text-orange-600 text-sm mb-3">
+                    ⚠️ Attempts remaining: {attemptsLeft}
+                </p>
+            )}
+            
+            {isTimedOut && countdownTimer && (
+                <div className="bg-red-50 border-2 border-red-200 p-3 rounded mb-3">
+                    <p className="text-red-800 text-sm font-semibold">
+                        🕒 You can try again in: <span className="text-lg">{countdownTimer}</span>
+                    </p>
+                </div>
+            )}
+            
+            <div className="flex gap-2">
+                <button 
+                    onClick={() => handleVerification(s)}
+                    disabled={isTimedOut}
+                    className={`flex-1 text-white p-3 rounded font-semibold transition ${
+                        isTimedOut 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-blue-600 hover:bg-blue-700'
+                    }`}>
+                    Verify
+                </button>
+                <button 
+                    onClick={() => {
+                        setShowVerification(false);
+                        setError('');
+                        setVerificationInput('');
+                    }}
+                    className="flex-1 bg-gray-300 p-3 rounded font-semibold hover:bg-gray-400 transition">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+)}
+
+<button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
                                                 </div>
                                             ))
                                         )}
@@ -1363,6 +1589,7 @@
     </script>
 </body>
 </html>
+
 
 
 
