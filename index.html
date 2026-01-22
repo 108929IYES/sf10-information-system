@@ -38,17 +38,18 @@
 
             const [loading, setLoading] = useState(false);
             const [searchFirst, setSearchFirst] = useState('');
-            const [searchMiddle, setSearchMiddle] = useState('');
             const [searchLast, setSearchLast] = useState('');
             const [searchLRN, setSearchLRN] = useState('');
             const [searchMethod, setSearchMethod] = useState('name');
-            const [result, setResult] = useState(null);
-            const [showVerification, setShowVerification] = useState(false);
-            const [verificationInput, setVerificationInput] = useState('');
-            const [verifiedStudents, setVerifiedStudents] = useState([]);
-            const [currentStudent, setCurrentStudent] = useState(null);
+            const [students, setStudents] = useState([]);
             const [error, setError] = useState('');
+            const [showMultiple, setShowMultiple] = useState(false);
+            const [searchMiddle, setSearchMiddle] = useState('');
             const [noMiddleName, setNoMiddleName] = useState(false);
+            const [verifiedStudents, setVerifiedStudents] = useState([]);
+            const [verificationInput, setVerificationInput] = useState('');
+            const [verifyingStudent, setVerifyingStudent] = useState(null);
+            const [verifyError, setVerifyError] = useState('');
 
             const statusColor = (status) => {
                 const colors = {
@@ -61,47 +62,15 @@
                 return colors[status] || 'bg-gray-100 text-gray-800';
             };
 
-            const getSF10Status = (student) => {
-                if (!student.sf10CopyReleased) {
-                    return { 
-                        icon: '✅', 
-                        color: 'bg-green-50 border-2 border-green-200', 
-                        message: 'SF10 ORIGINAL COPY is available at the school.', 
-                        sub: 'Please proceed to the Principal\'s Office to request your document.' 
-                    };
-                }
-                
-                if (student.sf10CopyReleased === 'Original') {
-                    return { 
-                        icon: '⚠️', 
-                        color: 'bg-yellow-50 border-2 border-yellow-200', 
-                        message: 'Only AUTHENTICATED COPY is available at the school.', 
-                        sub: 'The original SF10 has been released. You may request an authenticated copy at the Principal\'s Office.',  
-                    };
-                }
-                
-                if (student.sf10CopyReleased === 'Authenticated') {
-                    return { 
-                        icon: 'ℹ️', 
-                        color: 'bg-blue-50 border-2 border-blue-200', 
-                        message: 'An authenticated SF10 has been released. The original copy is still available.', 
-                        sub: 'You may request an authenticated copy at the Principal\'s Office.' 
-                    };
-                }
-                
-                return { 
-                    icon: 'ℹ️', 
-                    color: 'bg-blue-50 border-2 border-blue-200', 
-                    message: 'SF10 document is being processed.', 
-                    sub: 'Please contact the Principal\'s Office for more information.' 
-                };
-            };
-
             const searchPublic = async () => {
+                setError('');
+                setStudents([]);
+                setShowMultiple(false);
+
                 if (searchMethod === 'lrn') {
                     const lrn = searchLRN.trim();
                     if (!lrn) {
-                        setResult({ error: 'Please enter LRN' });
+                        setError('Please enter LRN');
                         return;
                     }
                     setLoading(true);
@@ -109,19 +78,19 @@
                         const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&lrn=${lrn}`);
                         const data = await res.json();
                         if (data.success && data.data.length > 0) {
-                            setResult({ students: data.data });
+                            setStudents(data.data);
                         } else {
-                            setResult({ error: 'No record found with this LRN' });
+                            setError('No record found with this LRN');
                         }
                     } catch (e) {
-                        setResult({ error: 'Search error' });
+                        setError('Search error');
                     }
                     setLoading(false);
                 } else {
                     const f = searchFirst.trim().toLowerCase();
                     const l = searchLast.trim().toLowerCase();
                     if (!f && !l) {
-                        setResult({ error: 'Please enter at least first name or last name' });
+                        setError('Please enter at least first name or last name');
                         return;
                     }
                     setLoading(true);
@@ -130,27 +99,24 @@
                         const data = await res.json();
                         if (data.success && data.data.length > 0) {
                             if (data.data.length > 1) {
-                                setResult({ multiple: true, students: data.data });
+                                setShowMultiple(true);
+                                setStudents(data.data);
                             } else {
-                                setResult({ students: data.data });
+                                setStudents(data.data);
                             }
                         } else {
-                            setResult({ error: 'No record found' });
+                            setError('No record found');
                         }
                     } catch (e) {
-                        setResult({ error: 'Search error' });
+                        setError('Search error');
                     }
                     setLoading(false);
                 }
             };
 
-            const searchWithMiddleName = async () => {
+            const searchWithMiddle = async () => {
                 const f = searchFirst.trim().toLowerCase();
                 const l = searchLast.trim().toLowerCase();
-                if (!f && !l) {
-                    setResult({ error: 'Enter name' });
-                    return;
-                }
                 const m = noMiddleName ? '' : searchMiddle.trim().toLowerCase();
 
                 setLoading(true);
@@ -163,63 +129,58 @@
                         if (noMiddleName) {
                             filtered = data.data.filter(s => !s.middleName || s.middleName.trim() === '' || s.middleName.toUpperCase() === 'N/A');
                         }
-
-                        if (filtered.length > 0) {
-                            setResult({ students: filtered });
-                        } else {
-                            setResult({ error: 'No matching record found' });
-                        }
+                        setStudents(filtered);
+                        setShowMultiple(false);
                     } else {
-                        setResult({ error: 'No record found' });
+                        setError('No matching record found');
+                        setStudents([]);
                     }
                 } catch (e) {
-                    setResult({ error: 'Search error' });
+                    setError('Search error');
                 }
                 setLoading(false);
             };
 
-            const handleVerification = () => {
-                if (!currentStudent) return;
-                
-                const student = currentStudent;
+            const handleVerify = (student) => {
                 const isValid = student.lrn && student.lrn !== 'N/A' && student.lrn.trim() !== ''
                     ? verificationInput.trim() === student.lrn.trim()
                     : verificationInput === student.dateOfBirth;
                 
                 if (isValid) {
                     setVerifiedStudents([...verifiedStudents, student.lrn || student.lastName]);
-                    setShowVerification(false);
-                    setError('');
+                    setVerifyingStudent(null);
                     setVerificationInput('');
-                    setCurrentStudent(null);
+                    setVerifyError('');
                 } else {
-                    setError('❌ Incorrect. Please try again.');
+                    setVerifyError('❌ Incorrect. Please try again.');
                 }
             };
 
-            const isStudentVerified = (student) => {
+            const isVerified = (student) => {
                 return verifiedStudents.includes(student.lrn || student.lastName);
             };
-            
-            const resetPublicSearch = () => {
+
+            const reset = () => {
                 setSearchFirst('');
-                setSearchMiddle('');
                 setSearchLast('');
                 setSearchLRN('');
+                setSearchMiddle('');
                 setNoMiddleName(false);
-                setResult(null);
-            };
-
-            const openVerification = (student) => {
-                setCurrentStudent(student);
-                setShowVerification(true);
+                setStudents([]);
                 setError('');
+                setShowMultiple(false);
+                setVerifyingStudent(null);
                 setVerificationInput('');
+                setVerifyError('');
             };
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 pb-20">
-                    {loading && <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50">Loading...</div>}
+                    {loading && (
+                        <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50">
+                            Loading...
+                        </div>
+                    )}
                     
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-8">
@@ -229,6 +190,7 @@
                             <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
                         </div>
 
+                        {/* SEARCH BOX */}
                         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
                             <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10 Record</h3>
 
@@ -294,271 +256,216 @@
                             >
                                 🔍 Search
                             </button>
+
+                            {students.length > 0 && (
+                                <button 
+                                    onClick={reset} 
+                                    className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition mt-3"
+                                >
+                                    ← New Search
+                                </button>
+                            )}
                         </div>
 
-                        {/* MULTIPLE RECORDS MODAL */}
-                        {result && result.multiple && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-xl max-w-lg w-full p-8">
-                                    <div className="text-center mb-6">
-                                        <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-3 rounded-lg mb-4">
-                                            <h3 className="text-lg font-bold">⚠ Multiple Records Found</h3>
-                                        </div>
-                                        <p className="text-gray-700 mb-2">We found <strong>{result.students.length} students</strong> with the name:</p>
-                                        <p className="text-xl font-bold text-blue-600 mb-4">{searchFirst} {searchLast}</p>
-                                        <p className="text-gray-600">Please enter your middle name to identify the correct record.</p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block mb-2 font-medium">Middle Name</label>
-                                            <input
-                                                type="text"
-                                                value={searchMiddle}
-                                                onChange={(e) => {
-                                                    setSearchMiddle(e.target.value);
-                                                    if (e.target.value) setNoMiddleName(false);
-                                                }}
-                                                placeholder="Enter your middle name"
-                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none"
-                                                disabled={noMiddleName}
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                id="noMiddleName"
-                                                checked={noMiddleName}
-                                                onChange={(e) => {
-                                                    setNoMiddleName(e.target.checked);
-                                                    if (e.target.checked) setSearchMiddle('');
-                                                }}
-                                                className="w-4 h-4 mr-2"
-                                            />
-                                            <label htmlFor="noMiddleName" className="text-gray-700 cursor-pointer">
-                                                I don't have a middle name
-                                            </label>
-                                        </div>
-
-                                        <button
-                                            onClick={searchWithMiddleName}
-                                            className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
-                                            Search Again
-                                        </button>
-                                        <button
-                                            onClick={() => setResult(null)}
-                                            className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
+                        {/* ERROR MESSAGE */}
+                        {error && (
+                            <div className="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-6 text-center">
+                                <h3 className="text-lg font-bold text-red-600 mb-2">No Record Found</h3>
+                                <p className="text-gray-700">{error}</p>
                             </div>
                         )}
 
-                        {/* RESULT MODAL */}
-                        {result && !result.multiple && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto">
-                                    {result.error ? (
-                                        <div className="p-8 text-center">
-                                            <h3 className="text-lg font-bold mb-4 text-red-600">No Record Found</h3>
-                                            <p className="mb-4 text-gray-700">{result.error}</p>
+                        {/* MULTIPLE RECORDS - NEED MIDDLE NAME */}
+                        {showMultiple && students.length > 1 && (
+                            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6 mb-6">
+                                <h3 className="text-lg font-bold text-yellow-800 mb-4 text-center">
+                                    ⚠ Multiple Records Found ({students.length} students)
+                                </h3>
+                                <p className="text-center text-gray-700 mb-4">
+                                    Please enter your middle name to identify the correct record:
+                                </p>
+
+                                <input
+                                    type="text"
+                                    value={searchMiddle}
+                                    onChange={(e) => {
+                                        setSearchMiddle(e.target.value);
+                                        if (e.target.value) setNoMiddleName(false);
+                                    }}
+                                    placeholder="Enter middle name"
+                                    className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
+                                    disabled={noMiddleName}
+                                />
+
+                                <div className="flex items-center mb-4">
+                                    <input
+                                        type="checkbox"
+                                        id="noMiddle"
+                                        checked={noMiddleName}
+                                        onChange={(e) => {
+                                            setNoMiddleName(e.target.checked);
+                                            if (e.target.checked) setSearchMiddle('');
+                                        }}
+                                        className="w-4 h-4 mr-2"
+                                    />
+                                    <label htmlFor="noMiddle" className="text-gray-700 cursor-pointer">
+                                        I don't have a middle name
+                                    </label>
+                                </div>
+
+                                <button
+                                    onClick={searchWithMiddle}
+                                    className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                                    Search Again
+                                </button>
+                            </div>
+                        )}
+
+                        {/* RESULTS */}
+                        {!showMultiple && students.length > 0 && students.map((s, i) => (
+                            <div key={i} className="bg-white rounded-xl shadow-lg p-8 mb-6">
+                                <div className="text-center mb-6">
+                                    <div className="inline-block bg-blue-600 text-white px-4 py-2 rounded-full font-bold mb-4">
+                                        SF10 RECORD FOUND
+                                    </div>
+                                </div>
+
+                                {/* Basic Info - Always visible */}
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                    <div className="bg-blue-50 p-3 rounded">
+                                        <strong className="text-xs text-gray-500">First Name:</strong>
+                                        <div className="text-lg font-bold mt-1">{s.firstName}</div>
+                                    </div>
+                                    <div className="bg-blue-50 p-3 rounded">
+                                        <strong className="text-xs text-gray-500">Middle Name:</strong>
+                                        <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
+                                    </div>
+                                    <div className="bg-blue-50 p-3 rounded">
+                                        <strong className="text-xs text-gray-500">Last Name:</strong>
+                                        <div className="text-lg font-bold mt-1">{s.lastName}</div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-yellow-50 p-3 rounded mb-4">
+                                    <strong className="text-xs text-gray-500">LRN:</strong>
+                                    <div className="text-base font-bold mt-1">
+                                        {isVerified(s) ? s.lrn : (
+                                            s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' 
+                                                ? '****' + s.lrn.slice(-4) 
+                                                : 'N/A'
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Full Details - After verification */}
+                                {isVerified(s) ? (
+                                    <div>
+                                        <div className="bg-green-50 border-2 border-green-500 p-3 rounded mb-4 text-center">
+                                            <strong className="text-green-800">✓ VERIFIED - COMPLETE RECORD</strong>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="bg-purple-50 p-3 rounded">
+                                                <strong className="text-xs text-gray-500">Date of Birth:</strong>
+                                                <div className="text-base font-bold mt-1">
+                                                    {new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </div>
+                                            </div>
+                                            <div className="bg-indigo-50 p-3 rounded">
+                                                <strong className="text-xs text-gray-500">Status:</strong>
+                                                <div className="mt-1">
+                                                    <span className={`px-3 py-1 rounded ${statusColor(s.status)} font-bold text-sm`}>
+                                                        {s.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                            <div className="bg-blue-50 p-3 rounded">
+                                                <strong className="text-xs text-gray-500">School Year:</strong>
+                                                <div className="text-base font-bold mt-1">{s.schoolYear}</div>
+                                            </div>
+                                            <div className="bg-teal-50 p-3 rounded">
+                                                <strong className="text-xs text-gray-500">Grade:</strong>
+                                                <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-green-50 border-2 border-green-200 p-4 rounded">
+                                            <p className="text-sm font-bold text-green-800">
+                                                ✅ SF10 is available at the school. Please proceed to the Principal's Office.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : verifyingStudent === i ? (
+                                    <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded">
+                                        <h4 className="font-bold mb-3">🔒 VERIFY YOUR IDENTITY</h4>
+                                        <p className="text-sm text-gray-700 mb-3">
+                                            Per Data Privacy Act of 2012 (RA 10173), please verify:
+                                        </p>
+
+                                        {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' ? (
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium">Enter your 12-digit LRN:</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={verificationInput}
+                                                    onChange={(e) => setVerificationInput(e.target.value)}
+                                                    maxLength="12"
+                                                    placeholder="Enter LRN"
+                                                    className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <label className="block mb-2 text-sm font-medium">Enter your Date of Birth:</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={verificationInput}
+                                                    onChange={(e) => setVerificationInput(e.target.value)}
+                                                    className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {verifyError && <p className="text-red-600 text-sm mb-3 font-semibold">{verifyError}</p>}
+
+                                        <div className="flex gap-2">
                                             <button 
-                                                onClick={resetPublicSearch} 
-                                                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-                                            >
-                                                Close
+                                                onClick={() => handleVerify(s)}
+                                                className="flex-1 bg-blue-600 text-white p-2 rounded font-semibold hover:bg-blue-700 transition">
+                                                Verify
+                                            </button>
+                                            <button 
+                                                onClick={() => {
+                                                    setVerifyingStudent(null);
+                                                    setVerificationInput('');
+                                                    setVerifyError('');
+                                                }}
+                                                className="flex-1 bg-gray-300 p-2 rounded font-semibold hover:bg-gray-400 transition">
+                                                Cancel
                                             </button>
                                         </div>
-                                    ) : (
-                                        result.students && result.students.map((s, i) => (
-                                            <div key={i} className="p-8">
-                                                <div className="text-center mb-6">
-                                                    <img src="logo.png" className="w-24 h-24 mx-auto mb-3" onError={(e) => e.target.style.display = 'none'} alt="Logo" />
-                                                    <h2 className="text-lg font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
-                                                    <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
-                                                    <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
-                                                </div>
-
-                                                {!isStudentVerified(s) ? (
-                                                    <div>
-                                                        <div className="grid grid-cols-3 gap-4 mb-4">
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">First Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.firstName}</div>
-                                                            </div>
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Middle Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
-                                                            </div>
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Last Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.lastName}</div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="bg-yellow-50 p-3 rounded mb-4">
-                                                            <strong className="text-xs text-gray-500">LRN:</strong>
-                                                            <div className="text-base font-bold mt-1">
-                                                                {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' 
-                                                                    ? '****' + s.lrn.slice(-4) 
-                                                                    : 'N/A'}
-                                                            </div>
-                                                        </div>
-
-                                                        {(() => {
-                                                            const status = getSF10Status(s);
-                                                            return (
-                                                                <div className={`${status.color} p-3 rounded mb-4`}>
-                                                                    <div className="flex items-start gap-2">
-                                                                        <span className="text-2xl">{status.icon}</span>
-                                                                        <div className="flex-1">
-                                                                            <p className="font-bold text-sm mb-1">{status.message}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })()}
-
-                                                        <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded mb-4">
-                                                            <p className="text-sm text-gray-700 mb-3">
-                                                                ℹ️ <strong>Additional information is protected</strong> under the Data Privacy Act of 2012 (RA 10173).
-                                                            </p>
-                                                            <button 
-                                                                onClick={() => openVerification(s)}
-                                                                className="w-full bg-blue-600 text-white px-4 py-3 rounded font-semibold hover:bg-blue-700 transition">
-                                                                🔒 View Full Details
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div>
-                                                        <div className="bg-green-50 border-2 border-green-500 p-3 rounded mb-4 text-center">
-                                                            <strong className="text-green-800">✓ VERIFIED - COMPLETE RECORD</strong>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-3 gap-4 mb-4">
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">First Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.firstName}</div>
-                                                            </div>
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Middle Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
-                                                            </div>
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Last Name:</strong>
-                                                                <div className="text-lg font-bold mt-1">{s.lastName}</div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-4 mb-4">
-                                                            <div className="bg-yellow-50 p-3 rounded">
-                                                                <strong className="text-xs text-gray-500">LRN:</strong>
-                                                                <div className="text-base font-bold mt-1">{s.lrn}</div>
-                                                            </div>
-                                                            <div className="bg-purple-50 p-3 rounded">
-                                                                <strong className="text-xs text-gray-500">Date of Birth:</strong>
-                                                                <div className="text-base font-bold mt-1">
-                                                                    {new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-3 gap-4 mb-4">
-                                                            <div className="bg-blue-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">School Year:</strong>
-                                                                <div className="text-base font-bold mt-1">{s.schoolYear}</div>
-                                                            </div>
-                                                            <div className="bg-indigo-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Grade:</strong>
-                                                                <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
-                                                            </div>
-                                                            <div className="bg-green-50 p-2 rounded">
-                                                                <strong className="text-xs text-gray-500">Status:</strong>
-                                                                <div className="mt-1">
-                                                                    <span className={`px-3 py-1 rounded ${statusColor(s.status)} font-bold text-sm`}>
-                                                                        {s.status}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <button 
-                                                    onClick={resetPublicSearch} 
-                                                    className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition"
-                                                >
-                                                    Close
-                                                </button>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* VERIFICATION MODAL */}
-                        {showVerification && currentStudent && (
-                            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-                                <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                    <h3 className="text-xl font-bold mb-4">🔒 VERIFY YOUR IDENTITY</h3>
-                                    
-                                    <p className="text-sm text-gray-700 mb-4">
-                                        In compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, please verify your identity.
-                                    </p>
-                                    
-                                    {currentStudent.lrn && currentStudent.lrn !== 'N/A' && currentStudent.lrn.trim() !== '' ? (
-                                        <div>
-                                            <label className="block mb-2 font-medium text-sm">Enter your 12-digit LRN:</label>
-                                            <input 
-                                                type="text" 
-                                                value={verificationInput}
-                                                onChange={(e) => setVerificationInput(e.target.value)}
-                                                maxLength="12"
-                                                placeholder="Enter LRN"
-                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                                            />
-                                            <p className="text-xs text-gray-600 mb-4">💡 Your LRN is on your report card.</p>
-                                        </div>
-                                    ) : (
-                                        <div>
-                                            <p className="text-sm text-gray-700 mb-2">This is an older record without LRN.</p>
-                                            <label className="block mb-2 font-medium text-sm">Enter your Date of Birth:</label>
-                                            <input 
-                                                type="date" 
-                                                value={verificationInput}
-                                                onChange={(e) => setVerificationInput(e.target.value)}
-                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                                            />
-                                            <p className="text-xs text-gray-600 mb-4">💡 Enter exact birth date.</p>
-                                        </div>
-                                    )}
-                                    
-                                    {error && <p className="text-red-600 text-sm mb-3 font-semibold">{error}</p>}
-                                    
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={handleVerification}
-                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded font-semibold transition">
-                                            Verify
-                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded">
+                                        <p className="text-sm text-gray-700 mb-3">
+                                            ℹ️ <strong>Additional information is protected</strong> under the Data Privacy Act of 2012.
+                                        </p>
                                         <button 
                                             onClick={() => {
-                                                setShowVerification(false);
-                                                setError('');
+                                                setVerifyingStudent(i);
                                                 setVerificationInput('');
-                                                setCurrentStudent(null);
+                                                setVerifyError('');
                                             }}
-                                            className="flex-1 bg-gray-300 p-3 rounded font-semibold hover:bg-gray-400 transition">
-                                            Cancel
+                                            className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                                            🔒 View Full Details
                                         </button>
                                     </div>
-                                </div>
+                                )}
                             </div>
-                        )}
+                        ))}
                     </div>
 
                     <div className="developer-credit">
