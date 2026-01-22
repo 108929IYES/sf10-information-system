@@ -25,28 +25,18 @@
             z-index: 40;
             box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .pdf-preview-container {
-            width: 100%;
-            height: 600px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
-        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState } = React;
 
         function App() {
-            // Replace with your actual Google Apps Script URL
             const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlGaAj_tRuqhVG4SjUbLS97-iJVTXVjB-OHn0lNHja_NdPzW8QmrR0variIQMFwqSFRw/exec';
 
-            // State management
             const [loading, setLoading] = useState(false);
-            const [students, setStudents] = useState([]);
             const [searchFirst, setSearchFirst] = useState('');
             const [searchMiddle, setSearchMiddle] = useState('');
             const [searchLast, setSearchLast] = useState('');
@@ -56,39 +46,9 @@
             const [showVerification, setShowVerification] = useState(false);
             const [verificationInput, setVerificationInput] = useState('');
             const [verifiedStudents, setVerifiedStudents] = useState([]);
+            const [currentStudent, setCurrentStudent] = useState(null);
             const [error, setError] = useState('');
-            const [showLogin, setShowLogin] = useState(false);
-            const [showForgotPassword, setShowForgotPassword] = useState(false);
-            const [password, setPassword] = useState('');
             const [noMiddleName, setNoMiddleName] = useState(false);
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [uploadProgress, setUploadProgress] = useState('');
-            const [pdfPreview, setPdfPreview] = useState(null);
-            const [showPdfModal, setShowPdfModal] = useState(false);
-            const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-            const [studentToDelete, setStudentToDelete] = useState(null);
-
-            // Admin states
-            const [adminView, setAdminView] = useState('search');
-            const [adminSearchFirst, setAdminSearchFirst] = useState('');
-            const [adminSearchMiddle, setAdminSearchMiddle] = useState('');
-            const [adminSearchLast, setAdminSearchLast] = useState('');
-            const [adminSearchLRN, setAdminSearchLRN] = useState('');
-            const [adminSearchResults, setAdminSearchResults] = useState([]);
-            const [newStudent, setNewStudent] = useState({
-                firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
-    		schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-    		sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
-    		sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
-    		sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
-    		sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
-            });
-            const [editStudent, setEditStudent] = useState(null);
-            const [uploadedFile, setUploadedFile] = useState(null);
-
-            useEffect(() => {
-                if (isAdmin) loadData();
-            }, [isAdmin]);
 
             const statusColor = (status) => {
                 const colors = {
@@ -101,20 +61,7 @@
                 return colors[status] || 'bg-gray-100 text-gray-800';
             };
 
-            const loadData = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAll`);
-                    const data = await res.json();
-                    setStudents(data.success ? data.data : []);
-                } catch (e) {
-                    console.error('Load error:', e);
-                }
-                setLoading(false);
-        };
-
-        // Get SF10 availability status for public view
-        const getSF10Status = (student) => {
+            const getSF10Status = (student) => {
                 if (!student.sf10CopyReleased) {
                     return { 
                         icon: '✅', 
@@ -137,8 +84,8 @@
                     return { 
                         icon: 'ℹ️', 
                         color: 'bg-blue-50 border-2 border-blue-200', 
-                        message: 'An authenticated SF10 has been released. The original copy is still available. You may request an authenticated copy at the Principal\'s Office.', 
-                        sub: '' 
+                        message: 'An authenticated SF10 has been released. The original copy is still available.', 
+                        sub: 'You may request an authenticated copy at the Principal\'s Office.' 
                     };
                 }
                 
@@ -231,254 +178,28 @@
                 setLoading(false);
             };
 
-            const searchAdmin = async () => {
-                const f = adminSearchFirst.trim().toLowerCase();
-                const m = adminSearchMiddle.trim().toLowerCase();
-                const l = adminSearchLast.trim().toLowerCase();
-                const lrn = adminSearchLRN.trim();
-
-                if (!f && !m && !l && !lrn) {
-                    alert('Please enter at least one search field');
-                    return;
-                }
-
-                setLoading(true);
-                try {
-                    const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&firstName=${f}&middleName=${m}&lastName=${l}&lrn=${lrn}`);
-                    const data = await res.json();
-                    setAdminSearchResults(data.success ? data.data : []);
-                } catch (e) {
-                    setAdminSearchResults([]);
-                }
-                setLoading(false);
-            };
-
-            const handleFileSelect = (e) => {
-                const file = e.target.files[0];
-                if (file && file.type === 'application/pdf') {
-                    setUploadedFile(file);
-                    setUploadProgress('File selected: ' + file.name);
-                } else {
-                    alert('Please select a PDF file');
-                    e.target.value = '';
-                }
-            };
-
-            const uploadFile = async () => {
-                if (!uploadedFile) return null;
-
-                setUploadProgress('Uploading...');
+            const handleVerification = () => {
+                if (!currentStudent) return;
                 
-                try {
-                    // Convert file to base64
-                    const base64Data = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                            const base64 = reader.result.split(',')[1];
-                            resolve(base64);
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(uploadedFile);
-                    });
-
-                    // Send to Google Apps Script
-                    const formData = new URLSearchParams();
-                    formData.append('action', 'uploadFile');
-                    formData.append('fileData', base64Data);
-                    formData.append('fileName', uploadedFile.name);
-                    formData.append('mimeType', uploadedFile.type);
-
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await res.json();
-
-                    if (data.success) {
-                        setUploadProgress('Upload successful!');
-                        return data.fileUrl;
-                    } else {
-                        setUploadProgress('Upload failed: ' + data.message);
-                        return null;
-                    }
-                } catch (e) {
-                    console.error('Upload error:', e);
-                    setUploadProgress('Upload error: ' + e.message);
-                    return null;
+                const student = currentStudent;
+                const isValid = student.lrn && student.lrn !== 'N/A' && student.lrn.trim() !== ''
+                    ? verificationInput.trim() === student.lrn.trim()
+                    : verificationInput === student.dateOfBirth;
+                
+                if (isValid) {
+                    setVerifiedStudents([...verifiedStudents, student.lrn || student.lastName]);
+                    setShowVerification(false);
+                    setError('');
+                    setVerificationInput('');
+                    setCurrentStudent(null);
+                } else {
+                    setError('❌ Incorrect. Please try again.');
                 }
             };
 
-
-            const add = async () => {
-                if (!newStudent.firstName || !newStudent.lastName || !newStudent.dateOfBirth || !newStudent.lrn || !newStudent.schoolYear) {
-                    alert('Please fill all required fields (First Name, Last Name, Date of Birth, LRN, School Year)');
-                    return;
-                }
-
-                setLoading(true);
-
-                // Upload file if exists
-                let fileUrl = null;
-                if (uploadedFile) {
-                    fileUrl = await uploadFile();
-                    if (!fileUrl) {
-                        setLoading(false);
-                        return;
-                    }
-                }
-
-                const studentData = { ...newStudent, sf10DocumentUrl: fileUrl || '' };
-
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'add', data: studentData })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        alert('Student added successfully!');
-                        loadData();
-                        resetAdminSearch();
-                        setUploadedFile(null);
-                        setUploadProgress('');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                } catch (e) {
-                    alert('Error adding student');
-                }
-                setLoading(false);
+            const isStudentVerified = (student) => {
+                return verifiedStudents.includes(student.lrn || student.lastName);
             };
-
-            const updateStudent = async () => {
-                if (!editStudent.firstName || !editStudent.lastName || !editStudent.dateOfBirth || !editStudent.lrn || !editStudent.schoolYear) {
-                    alert('Please fill all required fields');
-                    return;
-                }
-
-                setLoading(true);
-
-                // Upload new file if exists
-                let fileUrl = editStudent.sf10DocumentUrl;
-                if (uploadedFile) {
-                    const newFileUrl = await uploadFile();
-                    if (newFileUrl) {
-                        fileUrl = newFileUrl;
-                    }
-                }
-
-                const studentData = { ...editStudent, sf10DocumentUrl: fileUrl };
-
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'update', id: editStudent.id, data: studentData })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        alert('Student updated successfully!');
-                        loadData();
-                        resetAdminSearch();
-                        setUploadedFile(null);
-                        setUploadProgress('');
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                } catch (e) {
-                    alert('Error updating student');
-                }
-                setLoading(false);
-            };
-
-            const deleteStudent = async (id) => {
-                setLoading(true);
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'delete', id: id })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        alert('Student deleted successfully!');
-                        loadData();
-                        setShowDeleteConfirm(false);
-                        setStudentToDelete(null);
-                        if (adminView === 'search') {
-                            setAdminSearchResults(adminSearchResults.filter(s => s.id !== id));
-                        }
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                } catch (e) {
-                    alert('Error deleting student');
-                }
-                setLoading(false);
-            };
-
-            const sendPasswordReset = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'sendPasswordReset' })
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        alert('Password reset link has been sent to 108929@deped.gov.ph');
-                        setShowForgotPassword(false);
-                    } else {
-                        alert('Error sending reset email: ' + data.message);
-                    }
-                } catch (e) {
-                    alert('Error sending reset email');
-                }
-                setLoading(false);
-            };
-
-            const resetAdminSearch = () => {
-                setAdminView('search');
-                setAdminSearchFirst('');
-                setAdminSearchMiddle('');
-                setAdminSearchLast('');
-                setAdminSearchLRN('');
-                setAdminSearchResults([]);
-                setEditStudent(null);
-                setNewStudent({
-        firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
-        schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-        sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
-        sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
-        sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
-        sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
-    });
-                setUploadedFile(null);
-                setUploadProgress('');
-            };
-
-            const handleVerification = (student) => {
-    // Verify input - NO MORE TIMEOUT, JUST SIMPLE VERIFICATION
-    const isValid = student.lrn && student.lrn !== 'N/A' && student.lrn.trim() !== ''
-        ? verificationInput.trim() === student.lrn.trim()
-        : verificationInput === student.dateOfBirth;
-    
-    if (isValid) {
-        setVerifiedStudents([...verifiedStudents, student.lrn || student.lastName]);
-        setShowVerification(false);
-        setError('');
-        setVerificationInput('');
-    } else {
-        setError('❌ Incorrect. Please try again.');
-    }
-};
-
-const isStudentVerified = (student) => {
-    return verifiedStudents.includes(student.lrn || student.lastName);
-};
             
             const resetPublicSearch = () => {
                 setSearchFirst('');
@@ -489,575 +210,357 @@ const isStudentVerified = (student) => {
                 setResult(null);
             };
 
-            const startAddNew = () => {
-                setNewStudent({
-        firstName: searchFirst.trim() || adminSearchFirst.trim(),
-        middleName: searchMiddle.trim() || adminSearchMiddle.trim(),
-        lastName: searchLast.trim() || adminSearchLast.trim(),
-        dateOfBirth: '', lrn: '',
-        schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-        sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
-        sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
-        sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
-        sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
-    });
-                setAdminView('add');
-                setUploadedFile(null);
-                setUploadProgress('');
+            const openVerification = (student) => {
+                setCurrentStudent(student);
+                setShowVerification(true);
+                setError('');
+                setVerificationInput('');
             };
 
-            const startUpdate = (student) => {
-                setEditStudent(student);
-                setAdminView('edit');
-                setUploadedFile(null);
-                setUploadProgress('');
-            };
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 pb-20">
+                    {loading && <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50">Loading...</div>}
+                    
+                    <div className="max-w-4xl mx-auto">
+                        <div className="text-center mb-8">
+                            <img src="logo.png" className="w-32 h-32 mx-auto mb-4" onError={(e) => e.target.style.display = 'none'} alt="Logo" />
+                            <h1 className="text-4xl font-bold text-blue-600 mb-2">ILAYANG YUNI ELEMENTARY SCHOOL</h1>
+                            <h2 className="text-xl font-semibold text-blue-600 mb-1">SF10 Information System</h2>
+                            <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
+                        </div>
 
-            const previewPDF = (url) => {
-                setPdfPreview(url);
-                setShowPdfModal(true);
-            };
+                        <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+                            <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10 Record</h3>
 
-            const printPDF = (url) => {
-                window.open(url, '_blank');
-            };
-
-            const confirmDelete = (student) => {
-                setStudentToDelete(student);
-                setShowDeleteConfirm(true);
-            };
-
-            // PUBLIC VIEW
-            if (!isAdmin) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 pb-20">
-                        {loading && <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50">Loading...</div>}
-                        <div className="max-w-4xl mx-auto">
-                            <div className="text-center mb-8">
-                                <img src="logo.png" className="w-32 h-32 mx-auto mb-4" onError={(e) => e.target.style.display = 'none'} />
-                                <h1 className="text-4xl font-bold text-blue-600 mb-2">ILAYANG YUNI ELEMENTARY SCHOOL</h1>
-                                <h2 className="text-xl font-semibold text-blue-600 mb-1">SF10 Information System</h2>
-                                <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
-                            </div>
-                            <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-                                <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10 Record</h3>
-
-                                {/* Search Method Radio Buttons */}
-                                <div className="mb-6">
-                                    <label className="block mb-3 font-medium text-gray-700">Search Method:</label>
-                                    <div className="flex gap-6">
-                                        <label className="flex items-center cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="searchMethod"
-                                                value="name"
-                                                checked={searchMethod === 'name'}
-                                                onChange={(e) => setSearchMethod(e.target.value)}
-                                                className="w-4 h-4 mr-2"
-                                            />
-                                            <span className="text-gray-700">Search by Name</span>
-                                        </label>
-                                        <label className="flex items-center cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="searchMethod"
-                                                value="lrn"
-                                                checked={searchMethod === 'lrn'}
-                                                onChange={(e) => setSearchMethod(e.target.value)}
-                                                className="w-4 h-4 mr-2"
-                                            />
-                                            <span className="text-gray-700">Search by LRN</span>
-                                        </label>
-                                    </div>
+                            <div className="mb-6">
+                                <label className="block mb-3 font-medium text-gray-700">Search Method:</label>
+                                <div className="flex gap-6">
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="searchMethod"
+                                            value="name"
+                                            checked={searchMethod === 'name'}
+                                            onChange={(e) => setSearchMethod(e.target.value)}
+                                            className="w-4 h-4 mr-2"
+                                        />
+                                        <span className="text-gray-700">Search by Name</span>
+                                    </label>
+                                    <label className="flex items-center cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="searchMethod"
+                                            value="lrn"
+                                            checked={searchMethod === 'lrn'}
+                                            onChange={(e) => setSearchMethod(e.target.value)}
+                                            className="w-4 h-4 mr-2"
+                                        />
+                                        <span className="text-gray-700">Search by LRN</span>
+                                    </label>
                                 </div>
+                            </div>
 
-                                {/* Conditional Fields */}
-                                {searchMethod === 'name' ? (
-                                    <>
-                                        <input
-                                            type="text"
-                                            value={searchFirst}
-                                            onChange={(e) => setSearchFirst(e.target.value)}
-                                            placeholder="First Name"
-                                            className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
-                                            onKeyPress={(e) => e.key === 'Enter' && searchPublic()}
-                                        />
-                                        <input
-                                            type="text"
-                                            value={searchLast}
-                                            onChange={(e) => setSearchLast(e.target.value)}
-                                            placeholder="Last Name"
-                                            className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
-                                            onKeyPress={(e) => e.key === 'Enter' && searchPublic()}
-                                        />
-                                    </>
-                                ) : (
+                            {searchMethod === 'name' ? (
+                                <div>
                                     <input
                                         type="text"
-                                        value={searchLRN}
-                                        onChange={(e) => setSearchLRN(e.target.value)}
-                                        placeholder="Enter LRN (12 digits)"
+                                        value={searchFirst}
+                                        onChange={(e) => setSearchFirst(e.target.value)}
+                                        placeholder="First Name"
                                         className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
-                                        maxLength="12"
-                                        onKeyPress={(e) => e.key === 'Enter' && searchPublic()}
                                     />
-                                )}
-
-                                <button onClick={searchPublic} className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
-                                    🔍 Search
-                                </button>
-                            </div>
-
-                            {/* MULTIPLE RECORDS FOUND */}
-                            {result && result.multiple && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setResult(null)}>
-                                    <div className="bg-white rounded-xl max-w-lg w-full p-8" onClick={(e) => e.stopPropagation()}>
-                                        <div className="text-center mb-6">
-                                            <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-3 rounded-lg mb-4">
-                                                <h3 className="text-lg font-bold">⚠ Multiple Records Found</h3>
-                                            </div>
-                                            <p className="text-gray-700 mb-2">We found <strong>{result.students.length} students</strong> with the name:</p>
-                                            <p className="text-xl font-bold text-blue-600 mb-4">{searchFirst} {searchLast}</p>
-                                            <p className="text-gray-600">Please enter your middle name to identify the correct record.</p>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block mb-2 font-medium">Middle Name</label>
-                                                <input
-                                                    type="text"
-                                                    value={searchMiddle}
-                                                    onChange={(e) => {
-                                                        setSearchMiddle(e.target.value);
-                                                        if (e.target.value) setNoMiddleName(false);
-                                                    }}
-                                                    placeholder="Enter your middle name"
-                                                    className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none"
-                                                    disabled={noMiddleName}
-                                                    onKeyPress={(e) => e.key === 'Enter' && !noMiddleName && searchWithMiddleName()}
-                                                />
-                                            </div>
-
-                                            <div className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id="noMiddleName"
-                                                    checked={noMiddleName}
-                                                    onChange={(e) => {
-                                                        setNoMiddleName(e.target.checked);
-                                                        if (e.target.checked) setSearchMiddle('');
-                                                    }}
-                                                    className="w-4 h-4 mr-2"
-                                                />
-                                                <label htmlFor="noMiddleName" className="text-gray-700 cursor-pointer">
-                                                    I don't have a middle name
-                                                </label>
-                                            </div>
-
-                                            <button
-                                                onClick={searchWithMiddleName}
-                                                className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
-                                                Search Again
-                                            </button>
-                                            <button
-                                                onClick={() => setResult(null)}
-                                                className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={searchLast}
+                                        onChange={(e) => setSearchLast(e.target.value)}
+                                        placeholder="Last Name"
+                                        className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
+                                    />
                                 </div>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={searchLRN}
+                                    onChange={(e) => setSearchLRN(e.target.value)}
+                                    placeholder="Enter LRN (12 digits)"
+                                    className="w-full p-3 border-2 rounded mb-3 focus:border-blue-500 outline-none"
+                                    maxLength="12"
+                                />
                             )}
 
-                            {/* SINGLE RECORD OR ERROR */}
-                            {result && !result.multiple && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={resetPublicSearch}>
-                                    <div className="bg-white rounded-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                                        {result.error ? (
-                                            <div className="p-8 text-center">
-                                                <h3 className="text-lg font-bold mb-4 text-red-600">No Record Found</h3>
-                                                <p className="mb-4 text-gray-700">{result.error}</p>
-                                                <button onClick={resetPublicSearch} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Close</button>
-                                            </div>
-                                        ) : (
-                                            result.students.map((s, i) => (
-                                                <div key={i} className="p-8">
-                                                    <div className="text-center mb-6">
-                                                        <img src="logo.png" className="w-24 h-24 mx-auto mb-3" onError={(e) => e.target.style.display = 'none'} />
-                                                        <h2 className="text-lg font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
-                                                        <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
-                                                        <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
-                                                    </div>
-
-                                                    {/* LIMITED VIEW (Default - No Verification Required) */}
-{!isStudentVerified(s) ? (
-    <>
-        {/* Row 1: Names */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">First Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.firstName}</div>
-            </div>
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Middle Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
-            </div>
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Last Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.lastName}</div>
-            </div>
-        </div>
-
-        {/* Row 2: LRN (Last 4 digits only) */}
-        <div className="bg-yellow-50 p-3 rounded mb-4">
-            <strong className="text-xs text-gray-500">LRN:</strong>
-            <div className="text-base font-bold mt-1">
-                {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' 
-                    ? '****' + s.lrn.slice(-4) 
-                    : 'N/A'}
-            </div>
-        </div>
-
-        {/* SF10 Availability Status */}
-        {(() => {
-            const status = getSF10Status(s);
-            return (
-                <div className={`${status.color} p-3 rounded mb-4`}>
-                    <div className="flex items-start gap-2">
-                        <span className="text-2xl">{status.icon}</span>
-                        <div className="flex-1">
-                            <p className="font-bold text-sm mb-1">{status.message}</p>
+                            <button 
+                                onClick={searchPublic} 
+                                className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition"
+                            >
+                                🔍 Search
+                            </button>
                         </div>
-                    </div>
-                </div>
-            );
-        })()}
 
-        {/* Privacy Notice */}
-        <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded mb-4">
-            <p className="text-sm text-gray-700 mb-3">
-                ℹ️ <strong>Additional information is protected</strong> under the Data Privacy Act of 2012 (RA 10173).
-            </p>
-            <button 
-                onClick={() => {
-                    setShowVerification(true);
-                    setError('');
-                    setVerificationInput('');
-                }}
-                className="w-full bg-blue-600 text-white px-4 py-3 rounded font-semibold hover:bg-blue-700 transition">
-                🔒 View Full Details
-            </button>
-        </div>
-    </>
-) : (
-    <>
-        {/* FULL VIEW (After Verification) */}
-        <div className="bg-green-50 border-2 border-green-500 p-3 rounded mb-4 text-center">
-            <strong className="text-green-800">✓ VERIFIED - COMPLETE RECORD</strong>
-        </div>
+                        {/* MULTIPLE RECORDS MODAL */}
+                        {result && result.multiple && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-xl max-w-lg w-full p-8">
+                                    <div className="text-center mb-6">
+                                        <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-3 rounded-lg mb-4">
+                                            <h3 className="text-lg font-bold">⚠ Multiple Records Found</h3>
+                                        </div>
+                                        <p className="text-gray-700 mb-2">We found <strong>{result.students.length} students</strong> with the name:</p>
+                                        <p className="text-xl font-bold text-blue-600 mb-4">{searchFirst} {searchLast}</p>
+                                        <p className="text-gray-600">Please enter your middle name to identify the correct record.</p>
+                                    </div>
 
-        {/* Row 1: Names */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">First Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.firstName}</div>
-            </div>
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Middle Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
-            </div>
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Last Name:</strong>
-                <div className="text-lg font-bold mt-1">{s.lastName}</div>
-            </div>
-        </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block mb-2 font-medium">Middle Name</label>
+                                            <input
+                                                type="text"
+                                                value={searchMiddle}
+                                                onChange={(e) => {
+                                                    setSearchMiddle(e.target.value);
+                                                    if (e.target.value) setNoMiddleName(false);
+                                                }}
+                                                placeholder="Enter your middle name"
+                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none"
+                                                disabled={noMiddleName}
+                                            />
+                                        </div>
 
-        {/* Row 2: LRN and DOB (FULL) */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-yellow-50 p-3 rounded">
-                <strong className="text-xs text-gray-500">LRN:</strong>
-                <div className="text-base font-bold mt-1">{s.lrn}</div>
-            </div>
-            <div className="bg-purple-50 p-3 rounded">
-                <strong className="text-xs text-gray-500">Date of Birth:</strong>
-                <div className="text-base font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-            </div>
-        </div>
+                                        <div className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id="noMiddleName"
+                                                checked={noMiddleName}
+                                                onChange={(e) => {
+                                                    setNoMiddleName(e.target.checked);
+                                                    if (e.target.checked) setSearchMiddle('');
+                                                }}
+                                                className="w-4 h-4 mr-2"
+                                            />
+                                            <label htmlFor="noMiddleName" className="text-gray-700 cursor-pointer">
+                                                I don't have a middle name
+                                            </label>
+                                        </div>
 
-        {/* Row 3: School Year, Grade, and Status (3 columns) */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-blue-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">School Year Last Attended:</strong>
-                <div className="text-base font-bold mt-1">{s.schoolYear}</div>
-            </div>
-            <div className="bg-indigo-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Grade Last Attended:</strong>
-                <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
-            </div>
-            <div className="bg-green-50 p-2 rounded">
-                <strong className="text-xs text-gray-500">Status:</strong>
-                <div className="mt-1">
-                    <span className={`px-3 py-1 rounded ${statusColor(s.status)} font-bold text-sm`}>{s.status}</span>
-                </div>
-            </div>
-        </div>
-    </>
-)}
+                                        <button
+                                            onClick={searchWithMiddleName}
+                                            className="w-full bg-blue-600 text-white p-3 rounded font-semibold hover:bg-blue-700 transition">
+                                            Search Again
+                                        </button>
+                                        <button
+                                            onClick={() => setResult(null)}
+                                            className="w-full bg-gray-300 text-gray-800 p-3 rounded font-semibold hover:bg-gray-400 transition">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-{/* SF10 RECEIPT LOG */}
-{(s.sf10DateReceived || s.sf10ReceivedFrom || s.sf10EndorsedTo || s.sf10DateEndorsed || s.sf10CopyReceived) && (
-    <div className="bg-teal-50 p-2 rounded mb-3">
-        <h4 className="font-bold mb-1 text-xs">SF10 RECEIPT LOG</h4>
-        <div className="grid grid-cols-3 gap-3 text-xs">
-            {s.sf10CopyReceived && (
-                <div>
-                    <strong className="text-gray-600">Copy Received:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10CopyReceived}</div>
-                </div>
-            )}
-            {s.sf10DateReceived && (
-                <div>
-                    <strong className="text-gray-600">Date Received:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-            {s.sf10ReceivedFrom && (
-                <div>
-                    <strong className="text-gray-600">Received From:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReceivedFrom}</div>
-                </div>
-            )}
-            {s.sf10EndorsedTo && (
-                <div>
-                    <strong className="text-gray-600">Endorsed To:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10EndorsedTo}</div>
-                </div>
-            )}
-            {s.sf10DateEndorsed && (
-                <div>
-                    <strong className="text-gray-600">Date Endorsed:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-        </div>
-    </div>
-)}
+                        {/* RESULT MODAL */}
+                        {result && !result.multiple && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto">
+                                    {result.error ? (
+                                        <div className="p-8 text-center">
+                                            <h3 className="text-lg font-bold mb-4 text-red-600">No Record Found</h3>
+                                            <p className="mb-4 text-gray-700">{result.error}</p>
+                                            <button 
+                                                onClick={resetPublicSearch} 
+                                                className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+                                            >
+                                                Close
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        result.students && result.students.map((s, i) => (
+                                            <div key={i} className="p-8">
+                                                <div className="text-center mb-6">
+                                                    <img src="logo.png" className="w-24 h-24 mx-auto mb-3" onError={(e) => e.target.style.display = 'none'} alt="Logo" />
+                                                    <h2 className="text-lg font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
+                                                    <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
+                                                    <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
+                                                </div>
 
-                                                    {/* SF10 RELEASE LOG */}
-{(s.sf10ReleasedTo || s.sf10ReleaseDate || s.sf10CopyReleased || s.sf10TrackingNumber || s.sf10ReceivedBy || s.sf10ReceivedByDate) && (
-    <div className="bg-orange-50 p-2 rounded mb-3">
-        <h4 className="font-bold mb-1 text-xs">SF10 RELEASE LOG</h4>
-        <div className="grid grid-cols-3 gap-3 text-xs">
-            {s.sf10CopyReleased && (
-                <div>
-                    <strong className="text-gray-600">Copy Released:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10CopyReleased}</div>
-                </div>
-            )}
-            {s.sf10ReleaseDate && (
-                <div>
-                    <strong className="text-gray-600">Release Date:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-            {s.sf10ReleasedTo && (
-                <div>
-                    <strong className="text-gray-600">Released To:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReleasedTo}</div>
-                </div>
-            )}
-            {s.sf10TrackingNumber && (
-                <div>
-                    <strong className="text-gray-600">Tracking Number:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10TrackingNumber}</div>
-                </div>
-            )}
-            {s.sf10ReceivedBy && (
-                <div>
-                    <strong className="text-gray-600">Received By:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReceivedBy}</div>
-                </div>
-            )}
-            {s.sf10ReceivedByDate && (
-                <div>
-                    <strong className="text-gray-600">Received Date:</strong>
-                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-            )}
-        </div>
-    </div>
-)}
+                                                {!isStudentVerified(s) ? (
+                                                    <div>
+                                                        <div className="grid grid-cols-3 gap-4 mb-4">
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">First Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.firstName}</div>
+                                                            </div>
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Middle Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
+                                                            </div>
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Last Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.lastName}</div>
+                                                            </div>
+                                                        </div>
 
-                                                    {/* SF10 Availability Message */}
-                                                    {(() => {
-                                                        const status = getSF10Status(s);
-                                                        return (
-                                                            <div className={`${status.color} p-2 rounded mb-3`}>
-                                                                <div className="flex items-start gap-2">
-                                                                    <span className="text-2xl">{status.icon}</span>
-                                                                    <div className="flex-1">
-                                                                        <p className="font-bold text-xs mb-1">{status.message}</p>
-                                                                        <p className="text-xs text-gray-700">{status.sub}</p>
+                                                        <div className="bg-yellow-50 p-3 rounded mb-4">
+                                                            <strong className="text-xs text-gray-500">LRN:</strong>
+                                                            <div className="text-base font-bold mt-1">
+                                                                {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' 
+                                                                    ? '****' + s.lrn.slice(-4) 
+                                                                    : 'N/A'}
+                                                            </div>
+                                                        </div>
+
+                                                        {(() => {
+                                                            const status = getSF10Status(s);
+                                                            return (
+                                                                <div className={`${status.color} p-3 rounded mb-4`}>
+                                                                    <div className="flex items-start gap-2">
+                                                                        <span className="text-2xl">{status.icon}</span>
+                                                                        <div className="flex-1">
+                                                                            <p className="font-bold text-sm mb-1">{status.message}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+                                                            );
+                                                        })()}
+
+                                                        <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded mb-4">
+                                                            <p className="text-sm text-gray-700 mb-3">
+                                                                ℹ️ <strong>Additional information is protected</strong> under the Data Privacy Act of 2012 (RA 10173).
+                                                            </p>
+                                                            <button 
+                                                                onClick={() => openVerification(s)}
+                                                                className="w-full bg-blue-600 text-white px-4 py-3 rounded font-semibold hover:bg-blue-700 transition">
+                                                                🔒 View Full Details
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div>
+                                                        <div className="bg-green-50 border-2 border-green-500 p-3 rounded mb-4 text-center">
+                                                            <strong className="text-green-800">✓ VERIFIED - COMPLETE RECORD</strong>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-3 gap-4 mb-4">
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">First Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.firstName}</div>
                                                             </div>
-                                                        );
-                                                    })()}
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Middle Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
+                                                            </div>
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Last Name:</strong>
+                                                                <div className="text-lg font-bold mt-1">{s.lastName}</div>
+                                                            </div>
+                                                        </div>
 
-{/* VERIFICATION MODAL - SIMPLIFIED, NO TIMEOUT */}
-{showVerification && (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50" onClick={() => setShowVerification(false)}>
-        <div className="bg-white rounded-lg p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-xl font-bold mb-4">🔒 VERIFY YOUR IDENTITY</h3>
-            
-            <p className="text-sm text-gray-700 mb-4">
-                In compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, please verify your identity to view complete information.
-            </p>
-            
-            {s.lrn && s.lrn !== 'N/A' && s.lrn.trim() !== '' ? (
-                <>
-                    <label className="block mb-2 font-medium text-sm">Enter your 12-digit LRN:</label>
-                    <input 
-                        type="text" 
-                        value={verificationInput}
-                        onChange={(e) => setVerificationInput(e.target.value)}
-                        maxLength="12"
-                        placeholder="Enter LRN"
-                        className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                    />
-                    <p className="text-xs text-gray-600 mb-4">💡 Tip: Your LRN is found on your report card or school documents.</p>
-                </>
-            ) : (
-                <>
-                    <p className="text-sm text-gray-700 mb-2">This is an older record without LRN.</p>
-                    <label className="block mb-2 font-medium text-sm">Please enter your Date of Birth:</label>
-                    <input 
-                        type="date" 
-                        value={verificationInput}
-                        onChange={(e) => setVerificationInput(e.target.value)}
-                        className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                    />
-                    <p className="text-xs text-gray-600 mb-4">💡 Tip: Enter the exact birth date on your school records.</p>
-                </>
-            )}
-            
-            {error && <p className="text-red-600 text-sm mb-3 font-semibold">{error}</p>}
-            
-            <div className="flex gap-2">
-                <button 
-                    onClick={() => handleVerification(s)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded font-semibold transition">
-                    Verify
-                </button>
-                <button 
-                    onClick={() => {
-                        setShowVerification(false);
-                        setError('');
-                        setVerificationInput('');
-                    }}
-                    className="flex-1 bg-gray-300 p-3 rounded font-semibold hover:bg-gray-400 transition">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-)}
+                                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                                            <div className="bg-yellow-50 p-3 rounded">
+                                                                <strong className="text-xs text-gray-500">LRN:</strong>
+                                                                <div className="text-base font-bold mt-1">{s.lrn}</div>
+                                                            </div>
+                                                            <div className="bg-purple-50 p-3 rounded">
+                                                                <strong className="text-xs text-gray-500">Date of Birth:</strong>
+                                                                <div className="text-base font-bold mt-1">
+                                                                    {new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
-<button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
-                                                </div>
-                                            ))
-                                        )}
+                                                        <div className="grid grid-cols-3 gap-4 mb-4">
+                                                            <div className="bg-blue-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">School Year:</strong>
+                                                                <div className="text-base font-bold mt-1">{s.schoolYear}</div>
+                                                            </div>
+                                                            <div className="bg-indigo-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Grade:</strong>
+                                                                <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
+                                                            </div>
+                                                            <div className="bg-green-50 p-2 rounded">
+                                                                <strong className="text-xs text-gray-500">Status:</strong>
+                                                                <div className="mt-1">
+                                                                    <span className={`px-3 py-1 rounded ${statusColor(s.status)} font-bold text-sm`}>
+                                                                        {s.status}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <button 
+                                                    onClick={resetPublicSearch} 
+                                                    className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                                                >
+                                                    Close
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* VERIFICATION MODAL */}
+                        {showVerification && currentStudent && (
+                            <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                    <h3 className="text-xl font-bold mb-4">🔒 VERIFY YOUR IDENTITY</h3>
+                                    
+                                    <p className="text-sm text-gray-700 mb-4">
+                                        In compliance with the <strong>Data Privacy Act of 2012 (RA 10173)</strong>, please verify your identity.
+                                    </p>
+                                    
+                                    {currentStudent.lrn && currentStudent.lrn !== 'N/A' && currentStudent.lrn.trim() !== '' ? (
+                                        <div>
+                                            <label className="block mb-2 font-medium text-sm">Enter your 12-digit LRN:</label>
+                                            <input 
+                                                type="text" 
+                                                value={verificationInput}
+                                                onChange={(e) => setVerificationInput(e.target.value)}
+                                                maxLength="12"
+                                                placeholder="Enter LRN"
+                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                                            />
+                                            <p className="text-xs text-gray-600 mb-4">💡 Your LRN is on your report card.</p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-sm text-gray-700 mb-2">This is an older record without LRN.</p>
+                                            <label className="block mb-2 font-medium text-sm">Enter your Date of Birth:</label>
+                                            <input 
+                                                type="date" 
+                                                value={verificationInput}
+                                                onChange={(e) => setVerificationInput(e.target.value)}
+                                                className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
+                                            />
+                                            <p className="text-xs text-gray-600 mb-4">💡 Enter exact birth date.</p>
+                                        </div>
+                                    )}
+                                    
+                                    {error && <p className="text-red-600 text-sm mb-3 font-semibold">{error}</p>}
+                                    
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={handleVerification}
+                                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded font-semibold transition">
+                                            Verify
+                                        </button>
+                                        <button 
+                                            onClick={() => {
+                                                setShowVerification(false);
+                                                setError('');
+                                                setVerificationInput('');
+                                                setCurrentStudent(null);
+                                            }}
+                                            className="flex-1 bg-gray-300 p-3 rounded font-semibold hover:bg-gray-400 transition">
+                                            Cancel
+                                        </button>
                                     </div>
                                 </div>
-                            )}
-
-                            <div className="text-center"><button onClick={() => setShowLogin(true)} className="text-gray-500 text-sm hover:text-gray-700">Administrator Access</button></div>
-                            {/* Login Modal */}
-                            {showLogin && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                        <h3 className="text-xl font-bold mb-4">Admin Login</h3>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="Password"
-                                            className="w-full p-2 border-2 rounded mb-2 focus:border-blue-500 outline-none"
-                                            onKeyPress={(e) => e.key === 'Enter' && (password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password'))}
-                                        />
-                                        {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-                                        <div className="flex gap-2 mb-3">
-                                            <button onClick={() => password === 'IlayangYuni2025' ? (setIsAdmin(true), setShowLogin(false), setPassword('')) : setError('Wrong password')} className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">Login</button>
-                                            <button onClick={() => (setShowLogin(false), setPassword(''), setError(''))} className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 transition">Cancel</button>
-                                        </div>
-                                        <button onClick={() => { setShowLogin(false); setShowForgotPassword(true); }} className="text-blue-600 text-sm hover:underline">Forgot Password?</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Forgot Password Modal */}
-                            {showForgotPassword && (
-                                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                                        <h3 className="text-xl font-bold mb-4">Password Recovery</h3>
-                                        <p className="mb-4 text-gray-700">A password reset link will be sent to:</p>
-                                        <p className="mb-4 font-semibold text-blue-600">108929@deped.gov.ph</p>
-                                        <div className="flex gap-2">
-                                            <button onClick={sendPasswordReset} className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">Send Reset Link</button>
-                                            <button onClick={() => { setShowForgotPassword(false); setShowLogin(true); }} className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 transition">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* PDF Preview Modal */}
-                            {showPdfModal && pdfPreview && (
-                                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50" onClick={() => setShowPdfModal(false)}>
-                                    <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-xl font-bold">SF10 Document Preview</h3>
-                                            <button onClick={() => setShowPdfModal(false)} className="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
-                                        </div>
-                                        <div className="pdf-preview-container">
-                                            <iframe src={pdfPreview} className="w-full h-full" />
-                                        </div>
-                                        <div className="mt-4 flex gap-3">
-                                            <button onClick={() => printPDF(pdfPreview)} className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">🖨️ Print</button>
-                                            <button onClick={() => setShowPdfModal(false)} className="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400 transition">Close</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Developer Credit */}
-                        <div className="developer-credit">
-                            Copyright © January 2026 <strong>ALI VILLAVERDE TELADA</strong>
-                        </div>
-                    </div>
-                );
-            }
-
-            // ADMIN VIEW - (Full admin panel code continues here - keeping it exactly the same)
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 p-4 pb-20">
-                    {loading && <div className="fixed top-4 right-4 bg-white text-blue-600 px-4 py-2 rounded shadow z-50">Loading...</div>}
-
-                    {/* Rest of admin panel - exactly the same as original */}
-                    <div className="bg-white rounded-lg p-6 mb-6 flex justify-between items-center">
-                        <div>
-                            <h1 className="text-lg font-bold">SF10 Information System - Admin</h1>
-                            <p>Ilayang Yuni Elementary School</p>
-                        </div>
-                        <button onClick={() => setIsAdmin(false)} className="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition border-2 border-blue-600">Logout</button>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="text-white text-center p-8">
-                        <p className="text-xl">Admin Panel Active</p>
-                        <p className="text-sm mt-2">Full admin interface same as original</p>
-                    </div>
-
-                    {/* Developer Credit */}
                     <div className="developer-credit">
                         Copyright © January 2026 <strong>ALI VILLAVERDE TELADA</strong>
                     </div>
