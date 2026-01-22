@@ -63,7 +63,6 @@ const [error, setError] = useState('');
             const [showLogin, setShowLogin] = useState(false);
             const [showForgotPassword, setShowForgotPassword] = useState(false);
             const [password, setPassword] = useState('');
-            const [error, setError] = useState('');
             const [noMiddleName, setNoMiddleName] = useState(false);
             const [isAdmin, setIsAdmin] = useState(false);
             const [uploadProgress, setUploadProgress] = useState('');
@@ -133,15 +132,14 @@ const [error, setError] = useState('');
                         icon: '⚠️', 
                         color: 'bg-yellow-50 border-2 border-yellow-200', 
                         message: 'Only AUTHENTICATED COPY is available at the school.', 
-                        sub: 'The original SF10 has been released. You may request an authenticated copy at the Principal\'s Office.', 
-                        sub: '' 
+                        sub: 'The original SF10 has been released. You may request an authenticated copy at the Principal\'s Office.',  
                     };
                 }
                 
                 if (student.sf10CopyReleased === 'Authenticated') {
                     return { 
-                        icon: '❌', 
-                        color: 'bg-red-50 border-2 border-red-200', 
+                        icon: 'ℹ️', 
+                        color: 'bg-blue-50 border-2 border-blue-200', 
                         message: 'An authenticated SF10 has been released. The original copy is still available. You may request an authenticated copy at the Principal\'s Office.', 
                         sub: '' 
                     };
@@ -1589,6 +1587,7 @@ const isStudentVerified = (student) => {
     </script>
 </body>
 </html>
+
 
 
 
