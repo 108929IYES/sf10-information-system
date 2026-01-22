@@ -74,10 +74,11 @@
             const [adminSearchResults, setAdminSearchResults] = useState([]);
             const [newStudent, setNewStudent] = useState({
                 firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
-                schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-                sf10ReleasedTo: '', sf10ReleaseDate: '', sf10ReferenceNumber: '',
-                sf10ReceivedDate: '', sf10IssuedTo: '', sf10DateSent: '',
-                sf10DocumentUrl: ''
+    		schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
+    		sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
+    		sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
+    		sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
+    		sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
             });
             const [editStudent, setEditStudent] = useState(null);
             const [uploadedFile, setUploadedFile] = useState(null);
@@ -107,6 +108,43 @@
                     console.error('Load error:', e);
                 }
                 setLoading(false);
+        };
+
+        // Get SF10 availability status for public view
+        const getSF10Status = (student) => {
+                if (!student.sf10CopyReleased) {
+                    return { 
+                        icon: '✅', 
+                        color: 'bg-green-50 border-2 border-green-200', 
+                        message: 'SF10 ORIGINAL COPY is available at the school.', 
+                        sub: 'Please proceed to the Principal\'s Office to request your document.' 
+                    };
+                }
+                
+                if (student.sf10CopyReleased === 'Original') {
+                    return { 
+                        icon: '⚠️', 
+                        color: 'bg-yellow-50 border-2 border-yellow-200', 
+                        message: 'Only AUTHENTICATED COPY is available at the school.', 
+                        sub: 'The original copy has been released. Please proceed to the Principal\'s Office to request an authenticated copy.' 
+                    };
+                }
+                
+                if (student.sf10CopyReleased === 'Authenticated') {
+                    return { 
+                        icon: '❌', 
+                        color: 'bg-red-50 border-2 border-red-200', 
+                        message: 'SF10 copies have been released.', 
+                        sub: 'Please contact the Principal\'s Office for assistance.' 
+                    };
+                }
+                
+                return { 
+                    icon: 'ℹ️', 
+                    color: 'bg-blue-50 border-2 border-blue-200', 
+                    message: 'SF10 document is being processed.', 
+                    sub: 'Please contact the Principal\'s Office for more information.' 
+                };
             };
 
             const searchPublic = async () => {
@@ -418,12 +456,13 @@
                 setAdminSearchResults([]);
                 setEditStudent(null);
                 setNewStudent({
-                    firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
-                    schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-                    sf10ReleasedTo: '', sf10ReleaseDate: '', sf10ReferenceNumber: '',
-                    sf10ReceivedDate: '', sf10IssuedTo: '', sf10DateSent: '',
-                    sf10DocumentUrl: ''
-                });
+        firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
+        schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
+        sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
+        sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
+        sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
+        sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
+    });
                 setUploadedFile(null);
                 setUploadProgress('');
             };
@@ -439,15 +478,16 @@
 
             const startAddNew = () => {
                 setNewStudent({
-                    firstName: searchFirst.trim() || adminSearchFirst.trim(),
-                    middleName: searchMiddle.trim() || adminSearchMiddle.trim(),
-                    lastName: searchLast.trim() || adminSearchLast.trim(),
-                    dateOfBirth: '', lrn: '',
-                    schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
-                    sf10ReleasedTo: '', sf10ReleaseDate: '', sf10ReferenceNumber: '',
-                    sf10ReceivedDate: '', sf10IssuedTo: '', sf10DateSent: '',
-                    sf10DocumentUrl: ''
-                });
+        firstName: searchFirst.trim() || adminSearchFirst.trim(),
+        middleName: searchMiddle.trim() || adminSearchMiddle.trim(),
+        lastName: searchLast.trim() || adminSearchLast.trim(),
+        dateOfBirth: '', lrn: '',
+        schoolYear: '2024-2025', gradeLastAttended: '', status: 'Graduated',
+        sf10ReleasedTo: '', sf10ReleaseDate: '', sf10CopyReleased: '',
+        sf10TrackingNumber: '', sf10ReceivedBy: '', sf10ReceivedByDate: '',
+        sf10CopyReceived: '', sf10DateReceived: '', sf10ReceivedFrom: '',
+        sf10EndorsedTo: '', sf10DateEndorsed: '', sf10DocumentUrl: ''
+    });
                 setAdminView('add');
                 setUploadedFile(null);
                 setUploadProgress('');
@@ -638,124 +678,151 @@
 
                                                     {/* Row 1: Names */}
                                                     <div className="grid grid-cols-3 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">First Name:</strong>
+                                                        <div className="bg-blue-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-600">First Name:</strong>
                                                             <div className="text-2xl font-bold mt-1">{s.firstName}</div>
                                                         </div>
-                                                        <div className="bg-blue-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">Middle Name:</strong>
+                                                        <div className="bg-blue-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-600">Middle Name:</strong>
                                                             <div className="text-2xl font-bold mt-1">{s.middleName || 'N/A'}</div>
                                                         </div>
-                                                        <div className="bg-blue-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">Last Name:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.lastName}</div>
+                                                        <div className="bg-blue-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-600">Last Name:</strong>
+                                                            <div className="text-lg font-bold mt-1">{s.lastName}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Row 2: LRN and DOB */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                                         <div className="bg-yellow-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">LRN:</strong>
+                                                            <strong className="text-xs text-gray-600">LRN:</strong>
                                                             <div className="text-xl font-bold mt-1">{s.lrn}</div>
                                                         </div>
                                                         <div className="bg-purple-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">Date of Birth:</strong>
+                                                            <strong className="text-xs text-gray-600">Date of Birth:</strong>
                                                             <div className="text-xl font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Row 3: School Year and Grade */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">School Year Last Attended:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.schoolYear}</div>
+                                                        <div className="bg-blue-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-600">School Year Last Attended:</strong>
+                                                            <div className="text-lg font-bold mt-1">{s.schoolYear}</div>
                                                         </div>
                                                         <div className="bg-indigo-50 p-4 rounded">
-                                                            <strong className="text-sm text-gray-600">Grade Last Attended:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
+                                                            <strong className="text-xs text-gray-600">Grade Last Attended:</strong>
+                                                            <div className="text-lg font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Status */}
                                                     <div className="bg-green-50 p-4 rounded mb-4">
-                                                        <strong className="text-sm text-gray-600">Status:</strong>
+                                                        <strong className="text-xs text-gray-600">Status:</strong>
                                                         <div className="mt-2">
                                                             <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-lg`}>{s.status}</span>
                                                         </div>
                                                     </div>
 
-                                                    {/* Row 4: Transfer OUT */}
-                                                    {(s.sf10ReleasedTo || s.sf10ReleaseDate || s.sf10ReferenceNumber) && (
-                                                        <div className="bg-orange-50 p-5 rounded mb-4">
-                                                            <h4 className="font-bold mb-3 text-lg">Transfer OUT Details</h4>
-                                                            <div className="grid grid-cols-3 gap-4">
-                                                                {s.sf10ReleasedTo && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Released To:</strong>
-                                                                        <div className="font-semibold mt-1">{s.sf10ReleasedTo}</div>
-                                                                    </div>
-                                                                )}
-                                                                {s.sf10ReleaseDate && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Release Date:</strong>
-                                                                        <div className="font-semibold mt-1">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                                                    </div>
-                                                                )}
-                                                                {s.sf10ReferenceNumber && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Reference #:</strong>
-                                                                        <div className="font-semibold mt-1">{s.sf10ReferenceNumber}</div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    {/* SF10 RECEIPT LOG */}
+{(s.sf10DateReceived || s.sf10ReceivedFrom || s.sf10EndorsedTo || s.sf10DateEndorsed || s.sf10CopyReceived) && (
+    <div className="bg-teal-50 p-3 rounded mb-3">
+        <h4 className="font-bold mb-2 text-sm">SF10 RECEIPT LOG</h4>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+            {s.sf10CopyReceived && (
+                <div>
+                    <strong className="text-gray-600">Copy Received:</strong>
+                    <div className="font-semibold mt-1">{s.sf10CopyReceived}</div>
+                </div>
+            )}
+            {s.sf10DateReceived && (
+                <div>
+                    <strong className="text-gray-600">Date Received:</strong>
+                    <div className="font-semibold mt-1">{new Date(s.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+            )}
+            {s.sf10ReceivedFrom && (
+                <div>
+                    <strong className="text-gray-600">Received From:</strong>
+                    <div className="font-semibold mt-1">{s.sf10ReceivedFrom}</div>
+                </div>
+            )}
+            {s.sf10EndorsedTo && (
+                <div>
+                    <strong className="text-gray-600">Endorsed To:</strong>
+                    <div className="font-semibold mt-1">{s.sf10EndorsedTo}</div>
+                </div>
+            )}
+            {s.sf10DateEndorsed && (
+                <div>
+                    <strong className="text-gray-600">Date Endorsed:</strong>
+                    <div className="font-semibold mt-1">{new Date(s.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+            )}
+        </div>
+    </div>
+)}
 
-                                                    {/* Row 5: Transfer IN */}
-                                                    {(s.sf10ReceivedDate || s.sf10IssuedTo || s.sf10DateSent) && (
-                                                        <div className="bg-teal-50 p-5 rounded mb-4">
-                                                            <h4 className="font-bold mb-3 text-lg">Transfer IN Details</h4>
-                                                            <div className="grid grid-cols-3 gap-4">
-                                                                {s.sf10ReceivedDate && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Received Date:</strong>
-                                                                        <div className="font-semibold mt-1">{new Date(s.sf10ReceivedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                                                    </div>
-                                                                )}
-                                                                {s.sf10IssuedTo && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Released To:</strong>
-                                                                        <div className="font-semibold mt-1">{s.sf10IssuedTo}</div>
-                                                                    </div>
-                                                                )}
-                                                                {s.sf10DateSent && (
-                                                                    <div>
-                                                                        <strong className="text-sm text-gray-600">Release Date:</strong>
-                                                                        <div className="font-semibold mt-1">{new Date(s.sf10DateSent).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    {/* SF10 RELEASE LOG */}
+{(s.sf10ReleasedTo || s.sf10ReleaseDate || s.sf10CopyReleased || s.sf10TrackingNumber || s.sf10ReceivedBy || s.sf10ReceivedByDate) && (
+    <div className="bg-orange-50 p-3 rounded mb-3">
+        <h4 className="font-bold mb-2 text-sm">SF10 RELEASE LOG</h4>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+            {s.sf10CopyReleased && (
+                <div>
+                    <strong className="text-gray-600">Copy Released:</strong>
+                    <div className="font-semibold mt-1">{s.sf10CopyReleased}</div>
+                </div>
+            )}
+            {s.sf10ReleaseDate && (
+                <div>
+                    <strong className="text-gray-600">Release Date:</strong>
+                    <div className="font-semibold mt-1">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+            )}
+            {s.sf10ReleasedTo && (
+                <div>
+                    <strong className="text-gray-600">Released To:</strong>
+                    <div className="font-semibold mt-1">{s.sf10ReleasedTo}</div>
+                </div>
+            )}
+            {s.sf10TrackingNumber && (
+                <div>
+                    <strong className="text-gray-600">Tracking Number:</strong>
+                    <div className="font-semibold mt-1">{s.sf10TrackingNumber}</div>
+                </div>
+            )}
+            {s.sf10ReceivedBy && (
+                <div>
+                    <strong className="text-gray-600">Received By:</strong>
+                    <div className="font-semibold mt-1">{s.sf10ReceivedBy}</div>
+                </div>
+            )}
+            {s.sf10ReceivedByDate && (
+                <div>
+                    <strong className="text-gray-600">Received Date:</strong>
+                    <div className="font-semibold mt-1">{new Date(s.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+            )}
+        </div>
+    </div>
+)}
 
-                                                    {/* SF10 Document */}
-                                                    {s.sf10DocumentUrl && (
-                                                        <div className="bg-gray-50 p-5 rounded mb-4">
-                                                            <h4 className="font-bold mb-3 text-lg">SF10 Document</h4>
-                                                            <div className="flex gap-3">
-                                                                <button
-                                                                    onClick={() => previewPDF(s.sf10DocumentUrl)}
-                                                                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-                                                                    📄 Preview Document
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => printPDF(s.sf10DocumentUrl)}
-                                                                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
-                                                                    🖨️ Print Document
-                                                                </button>
+                                                    {/* SF10 Availability Message */}
+                                                    {(() => {
+                                                        const status = getSF10Status(s);
+                                                        return (
+                                                            <div className={`${status.color} p-3 rounded mb-3`}>
+                                                                <div className="flex items-start gap-2">
+                                                                    <span className="text-2xl">{status.icon}</span>
+                                                                    <div className="flex-1">
+                                                                        <p className="font-bold text-sm mb-1">{status.message}</p>
+                                                                        <p className="text-xs text-gray-700">{status.sub}</p>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
 
                                                     <button onClick={resetPublicSearch} className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition">Close</button>
                                                 </div>
@@ -766,7 +833,6 @@
                             )}
 
                             <div className="text-center"><button onClick={() => setShowLogin(true)} className="text-gray-500 text-sm hover:text-gray-700">Administrator Access</button></div>
-
                             {/* Login Modal */}
                             {showLogin && (
                                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -952,7 +1018,17 @@
                                         <div><strong>School Year Last Attended:</strong> {student.schoolYear}</div>
                                         <div><strong>Grade Last Attended:</strong> {student.gradeLastAttended || 'N/A'}</div>
                                         <div><strong>Status:</strong> <span className={`px-3 py-1 rounded ${statusColor(student.status)}`}>{student.status}</span></div>
-                                        {student.sf10DocumentUrl && <div><strong>SF10 Document:</strong> <button onClick={() => previewPDF(student.sf10DocumentUrl)} className="text-blue-600 hover:underline ml-2">View Document</button></div>}
+{student.sf10DocumentUrl && (
+    <div className="flex items-center gap-2">
+        <strong>SF10 Document:</strong>
+        <button onClick={() => previewPDF(student.sf10DocumentUrl)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">
+            📄 View
+        </button>
+        <button onClick={() => printPDF(student.sf10DocumentUrl)} className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition">
+            🖨️ Print
+        </button>
+    </div>
+)}
                                     </div>
                                     <div className="flex gap-2">
                                         <button
@@ -1003,7 +1079,7 @@
                             <h3 className="text-2xl font-bold mb-6 text-center">➕ Add New Student Record</h3>
                             
                             {/* Row 1: Names */}
-                            <div className="grid grid-cols-3 gap-4 mb-4">
+                            <div className="grid grid-cols-3 gap-3 mb-3">
                                 <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={newStudent.firstName} onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
                                 <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={newStudent.middleName} onChange={(e) => setNewStudent({ ...newStudent, middleName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
                                 <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={newStudent.lastName} onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
@@ -1027,25 +1103,48 @@
                                 <select value={newStudent.status} onChange={(e) => setNewStudent({ ...newStudent, status: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select>
                             </div>
 
-                            {/* Row 4: Transfer OUT Details (Optional) */}
-                            <div className="bg-orange-50 p-4 rounded mb-4">
-                                <h4 className="font-semibold mb-2">Transfer OUT Details (Optional)</h4>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={newStudent.sf10ReleasedTo} onChange={(e) => setNewStudent({ ...newStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Institution" /></div>
-                                    <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={newStudent.sf10ReleaseDate} onChange={(e) => setNewStudent({ ...newStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                    <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={newStudent.sf10ReferenceNumber} onChange={(e) => setNewStudent({ ...newStudent, sf10ReferenceNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. REF-2025-001" /></div>
-                                </div>
-                            </div>
+                            {/* SF10 RELEASE LOG (Optional) */}
+<div className="bg-orange-50 p-4 rounded mb-4">
+    <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
+    <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+            <label className="block mb-1 text-sm">SF10 Copy Released</label>
+            <select value={newStudent.sf10CopyReleased} onChange={(e) => setNewStudent({ ...newStudent, sf10CopyReleased: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                <option value="">Select Type</option>
+                <option value="Original">Original</option>
+                <option value="Authenticated">Authenticated</option>
+            </select>
+        </div>
+        <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={newStudent.sf10ReleaseDate} onChange={(e) => setNewStudent({ ...newStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+        <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={newStudent.sf10ReleasedTo} onChange={(e) => setNewStudent({ ...newStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+    </div>
+    <div className="grid grid-cols-3 gap-3">
+        <div><label className="block mb-1 text-sm">Tracking Number</label><input type="text" value={newStudent.sf10TrackingNumber} onChange={(e) => setNewStudent({ ...newStudent, sf10TrackingNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. TRK-2025-001" /></div>
+        <div><label className="block mb-1 text-sm">Received By</label><input type="text" value={newStudent.sf10ReceivedBy} onChange={(e) => setNewStudent({ ...newStudent, sf10ReceivedBy: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name of recipient" /></div>
+        <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={newStudent.sf10ReceivedByDate} onChange={(e) => setNewStudent({ ...newStudent, sf10ReceivedByDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+    </div>
+</div>
 
-                            {/* Row 5: Transfer IN Details (Optional) */}
-                            <div className="bg-teal-50 p-4 rounded mb-4">
-                                <h4 className="font-semibold mb-2">Transfer IN Details (Optional)</h4>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={newStudent.sf10ReceivedDate} onChange={(e) => setNewStudent({ ...newStudent, sf10ReceivedDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                    <div><label className="block mb-1 text-sm">Released To (Previous School)</label><input type="text" value={newStudent.sf10IssuedTo} onChange={(e) => setNewStudent({ ...newStudent, sf10IssuedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Previous School" /></div>
-                                    <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={newStudent.sf10DateSent} onChange={(e) => setNewStudent({ ...newStudent, sf10DateSent: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                </div>
-                            </div>
+                            {/* SF10 RECEIPT LOG (Optional) */}
+<div className="bg-teal-50 p-4 rounded mb-4">
+    <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
+    <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+            <label className="block mb-1 text-sm">SF10 Copy Received</label>
+            <select value={newStudent.sf10CopyReceived} onChange={(e) => setNewStudent({ ...newStudent, sf10CopyReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                <option value="">Select Type</option>
+                <option value="Original">Original</option>
+                <option value="Authenticated">Authenticated</option>
+            </select>
+        </div>
+        <div><label className="block mb-1 text-sm">Date Received</label><input type="date" value={newStudent.sf10DateReceived} onChange={(e) => setNewStudent({ ...newStudent, sf10DateReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+        <div><label className="block mb-1 text-sm">Received From</label><input type="text" value={newStudent.sf10ReceivedFrom} onChange={(e) => setNewStudent({ ...newStudent, sf10ReceivedFrom: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+        <div><label className="block mb-1 text-sm">Endorsed To</label><input type="text" value={newStudent.sf10EndorsedTo} onChange={(e) => setNewStudent({ ...newStudent, sf10EndorsedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name" /></div>
+        <div><label className="block mb-1 text-sm">Date Endorsed</label><input type="date" value={newStudent.sf10DateEndorsed} onChange={(e) => setNewStudent({ ...newStudent, sf10DateEndorsed: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+    </div>
+</div>
 
                             {/* SF10 Document Upload */}
                             <div className="bg-indigo-50 p-4 rounded mb-4">
@@ -1070,14 +1169,14 @@
                     {adminView === 'edit' && editStudent && (
                         <div className="bg-white rounded-lg p-6 shadow">
                             <h3 className="text-2xl font-bold mb-6 text-center">📝 Update Student Record</h3>
-                            <div className="bg-blue-50 p-4 rounded mb-4">
+                            <div className="bg-blue-50 p-3 rounded mb-4">
                                 <h4 className="font-semibold mb-2">Student Information</h4>
                                 <p><strong>Name:</strong> {editStudent.firstName} {editStudent.middleName} {editStudent.lastName}</p>
                                 <p><strong>LRN:</strong> {editStudent.lrn}</p>
                             </div>
 
                             {/* Row 1: Names */}
-                            <div className="grid grid-cols-3 gap-4 mb-4">
+                            <div className="grid grid-cols-3 gap-3 mb-3">
                                 <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={editStudent.firstName} onChange={(e) => setEditStudent({ ...editStudent, firstName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
                                 <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={editStudent.middleName || ''} onChange={(e) => setEditStudent({ ...editStudent, middleName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
                                 <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={editStudent.lastName} onChange={(e) => setEditStudent({ ...editStudent, lastName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
@@ -1101,39 +1200,58 @@
                                 <select value={editStudent.status} onChange={(e) => setEditStudent({ ...editStudent, status: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select>
                             </div>
 
-                            {/* Row 4: Transfer OUT Details (Optional) */}
-                            <div className="bg-orange-50 p-4 rounded mb-4">
-                                <h4 className="font-semibold mb-2">Transfer OUT Details (Optional)</h4>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={editStudent.sf10ReleasedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Institution" /></div>
-                                    <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={editStudent.sf10ReleaseDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                    <div><label className="block mb-1 text-sm">Reference #</label><input type="text" value={editStudent.sf10ReferenceNumber || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReferenceNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. REF-2025-001" /></div>
-                                </div>
-                            </div>
+                            {/* SF10 RELEASE LOG (Optional) */}
+<div className="bg-orange-50 p-4 rounded mb-4">
+    <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
+    <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+            <label className="block mb-1 text-sm">SF10 Copy Released</label>
+            <select value={editStudent.sf10CopyReleased || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReleased: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                <option value="">Select Type</option>
+                <option value="Original">Original</option>
+                <option value="Authenticated">Authenticated</option>
+            </select>
+        </div>
+        <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={editStudent.sf10ReleaseDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+        <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={editStudent.sf10ReleasedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+    </div>
+    <div className="grid grid-cols-3 gap-3">
+        <div><label className="block mb-1 text-sm">Tracking Number</label><input type="text" value={editStudent.sf10TrackingNumber || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10TrackingNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. TRK-2025-001" /></div>
+        <div><label className="block mb-1 text-sm">Received By</label><input type="text" value={editStudent.sf10ReceivedBy || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedBy: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name of recipient" /></div>
+        <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={editStudent.sf10ReceivedByDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedByDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+    </div>
+</div>
 
-                            {/* Row 5: Transfer IN Details (Optional) */}
-                            <div className="bg-teal-50 p-4 rounded mb-4">
-                                <h4 className="font-semibold mb-2">Transfer IN Details (Optional)</h4>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={editStudent.sf10ReceivedDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                    <div><label className="block mb-1 text-sm">Released To (Previous School)</label><input type="text" value={editStudent.sf10IssuedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10IssuedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Previous School" /></div>
-                                    <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={editStudent.sf10DateSent || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateSent: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-                                </div>
-                            </div>
+                            {/* SF10 RECEIPT LOG (Optional) */}
+<div className="bg-teal-50 p-4 rounded mb-4">
+    <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
+    <div className="grid grid-cols-3 gap-3 mb-3">
+        <div>
+            <label className="block mb-1 text-sm">SF10 Copy Received</label>
+            <select value={editStudent.sf10CopyReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                <option value="">Select Type</option>
+                <option value="Original">Original</option>
+                <option value="Authenticated">Authenticated</option>
+            </select>
+        </div>
+        <div><label className="block mb-1 text-sm">Date Received</label><input type="date" value={editStudent.sf10DateReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+        <div><label className="block mb-1 text-sm">Received From</label><input type="text" value={editStudent.sf10ReceivedFrom || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedFrom: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+    </div>
+    <div className="grid grid-cols-2 gap-3">
+        <div><label className="block mb-1 text-sm">Endorsed To</label><input type="text" value={editStudent.sf10EndorsedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10EndorsedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name" /></div>
+        <div><label className="block mb-1 text-sm">Date Endorsed</label><input type="date" value={editStudent.sf10DateEndorsed || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateEndorsed: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+    </div>
+</div>
 
                             {/* SF10 Document Management */}
-                            <div className="bg-indigo-50 p-4 rounded mb-4">
-                                <h4 className="font-semibold mb-3">SF10 Document Management</h4>
-                                {editStudent.sf10DocumentUrl && (
-                                    <div className="mb-3 p-3 bg-white rounded border">
-                                        <p className="text-sm mb-2"><strong>Current Document:</strong></p>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => previewPDF(editStudent.sf10DocumentUrl)} className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">📄 Preview</button>
-                                            <button onClick={() => printPDF(editStudent.sf10DocumentUrl)} className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition">🖨️ Print</button>
-                                            <button onClick={() => setEditStudent({ ...editStudent, sf10DocumentUrl: '' })} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition">🗑️ Remove</button>
-                                        </div>
-                                    </div>
-                                )}
+<div className="bg-indigo-50 p-4 rounded mb-4">
+    <h4 className="font-semibold mb-3">SF10 Document Management</h4>
+    {editStudent.sf10DocumentUrl && (
+        <div className="mb-3 p-3 bg-white rounded border">
+            <p className="text-sm mb-2"><strong>Current Document:</strong> Document uploaded</p>
+            <button onClick={() => setEditStudent({ ...editStudent, sf10DocumentUrl: '' })} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition">🗑️ Remove Document</button>
+        </div>
+    )}
                                 <label className="block mb-1 text-sm font-medium">Upload New SF10 Document (PDF)</label>
                                 <input
                                     type="file"
@@ -1204,7 +1322,7 @@
                                 <h3 className="text-xl font-bold mb-4 text-red-600">⚠️ Confirm Delete</h3>
                                 <p className="mb-2">Are you sure you want to delete this student record?</p>
                                 <p className="mb-4 font-semibold">{studentToDelete.firstName} {studentToDelete.middleName} {studentToDelete.lastName}</p>
-                                <p className="mb-6 text-sm text-gray-600">This action cannot be undone!</p>
+                                <p className="mb-6 text-xs text-gray-600">This action cannot be undone!</p>
                                 <div className="flex gap-2">
                                     <button onClick={() => deleteStudent(studentToDelete.id)} className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 transition">Yes, Delete</button>
                                     <button onClick={() => { setShowDeleteConfirm(false); setStudentToDelete(null); }} className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 transition">Cancel</button>
@@ -1244,5 +1362,6 @@
     </script>
 </body>
 </html>
+
 
 
