@@ -55,9 +55,6 @@
             const [result, setResult] = useState(null);
             const [showVerification, setShowVerification] = useState(false);
 const [verificationInput, setVerificationInput] = useState('');
-const [attemptsLeft, setAttemptsLeft] = useState(3);
-const [isTimedOut, setIsTimedOut] = useState(false);
-const [countdownTimer, setCountdownTimer] = useState('');
 const [verifiedStudents, setVerifiedStudents] = useState([]);
 const [error, setError] = useState('');
             const [showLogin, setShowLogin] = useState(false);
@@ -474,22 +471,6 @@ const [error, setError] = useState('');
             };
 
             const handleVerification = (student) => {
-    // Check if timed out
-    const timeoutKey = `timeout_${student.lrn || student.lastName}`;
-    const timeout = localStorage.getItem(timeoutKey);
-    
-    if (timeout) {
-        const timeoutData = JSON.parse(timeout);
-        if (Date.now() < timeoutData.expiresAt) {
-            setIsTimedOut(true);
-            startCountdown(timeoutData.expiresAt, timeoutKey);
-            return;
-        } else {
-            localStorage.removeItem(timeoutKey);
-            setAttemptsLeft(3);
-        }
-    }
-    
     // Verify input
     const isValid = student.lrn && student.lrn !== 'N/A' && student.lrn.trim() !== ''
         ? verificationInput.trim() === student.lrn.trim()
@@ -500,45 +481,9 @@ const [error, setError] = useState('');
         setShowVerification(false);
         setError('');
         setVerificationInput('');
-        setAttemptsLeft(3);
-        localStorage.removeItem(timeoutKey);
     } else {
-        const newAttempts = attemptsLeft - 1;
-        setAttemptsLeft(newAttempts);
-        
-        if (newAttempts === 2) {
-            setError('❌ Incorrect. You have 2 more attempts.');
-        } else if (newAttempts === 1) {
-            setError('❌ Incorrect. You have 1 more attempt. Please double-check.');
-        } else if (newAttempts === 0) {
-            const timeoutData = {
-                expiresAt: Date.now() + (2 * 60 * 60 * 1000)
-            };
-            localStorage.setItem(timeoutKey, JSON.stringify(timeoutData));
-            setError('❌ For security purposes, please try again after 2 hours.');
-            setIsTimedOut(true);
-            startCountdown(timeoutData.expiresAt, timeoutKey);
-        }
+        setError('❌ Incorrect. Please try again.');
     }
-};
-
-const startCountdown = (expiresAt, timeoutKey) => {
-    const interval = setInterval(() => {
-        const remaining = expiresAt - Date.now();
-        
-        if (remaining <= 0) {
-            clearInterval(interval);
-            setIsTimedOut(false);
-            setAttemptsLeft(3);
-            setCountdownTimer('');
-            localStorage.removeItem(timeoutKey);
-        } else {
-            const hours = Math.floor(remaining / (60 * 60 * 1000));
-            const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-            const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
-            setCountdownTimer(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-        }
-    }, 1000);
 };
 
 const isStudentVerified = (student) => {
@@ -989,7 +934,6 @@ const isStudentVerified = (student) => {
                         maxLength="12"
                         placeholder="Enter LRN"
                         className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                        disabled={isTimedOut}
                     />
                     <p className="text-xs text-gray-600 mb-4">💡 Tip: Your LRN is found on your report card or school documents.</p>
                 </>
@@ -1002,7 +946,6 @@ const isStudentVerified = (student) => {
                         value={verificationInput}
                         onChange={(e) => setVerificationInput(e.target.value)}
                         className="w-full p-3 border-2 rounded focus:border-blue-500 outline-none mb-2"
-                        disabled={isTimedOut}
                     />
                     <p className="text-xs text-gray-600 mb-4">💡 Tip: Enter the exact birth date on your school records.</p>
                 </>
@@ -1010,30 +953,11 @@ const isStudentVerified = (student) => {
             
             {error && <p className="text-red-600 text-sm mb-3 font-semibold">{error}</p>}
             
-            {attemptsLeft < 3 && !isTimedOut && (
-                <p className="text-orange-600 text-sm mb-3">
-                    ⚠️ Attempts remaining: {attemptsLeft}
-                </p>
-            )}
-            
-            {isTimedOut && countdownTimer && (
-                <div className="bg-red-50 border-2 border-red-200 p-3 rounded mb-3">
-                    <p className="text-red-800 text-sm font-semibold">
-                        🕒 You can try again in: <span className="text-lg">{countdownTimer}</span>
-                    </p>
-                </div>
-            )}
-            
             <div className="flex gap-2">
                 <button 
                     onClick={() => handleVerification(s)}
-                    disabled={isTimedOut}
-                    className={`flex-1 text-white p-3 rounded font-semibold transition ${
-                        isTimedOut 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-blue-600 hover:bg-blue-700'
-                    }`}>
-                    Verify
+    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded font-semibold transition">
+    Verify
                 </button>
                 <button 
                     onClick={() => {
@@ -1587,6 +1511,7 @@ const isStudentVerified = (student) => {
     </script>
 </body>
 </html>
+
 
 
 
