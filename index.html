@@ -126,7 +126,8 @@
                         icon: '⚠️', 
                         color: 'bg-yellow-50 border-2 border-yellow-200', 
                         message: 'Only AUTHENTICATED COPY is available at the school.', 
-                        sub: 'The original copy has been released. Please proceed to the Principal\'s Office to request an authenticated copy.' 
+                        sub: 'The original SF10 has been released. You may request an authenticated copy at the Principal\'s Office.', 
+                        sub: '' 
                     };
                 }
                 
@@ -134,8 +135,8 @@
                     return { 
                         icon: '❌', 
                         color: 'bg-red-50 border-2 border-red-200', 
-                        message: 'SF10 copies have been released.', 
-                        sub: 'Please contact the Principal\'s Office for assistance.' 
+                        message: 'An authenticated SF10 has been released. The original copy is still available. You may request an authenticated copy at the Principal\'s Office.', 
+                        sub: '' 
                     };
                 }
                 
@@ -523,7 +524,7 @@
                             <div className="text-center mb-8">
                                 <img src="logo.png" className="w-32 h-32 mx-auto mb-4" onError={(e) => e.target.style.display = 'none'} />
                                 <h1 className="text-4xl font-bold text-blue-600 mb-2">ILAYANG YUNI ELEMENTARY SCHOOL</h1>
-                                <h2 className="text-2xl font-semibold text-blue-600 mb-1">SF10 Information System</h2>
+                                <h2 className="text-xl font-semibold text-blue-600 mb-1">SF10 Information System</h2>
                                 <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
                             </div>
                             <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
@@ -601,7 +602,7 @@
                                     <div className="bg-white rounded-xl max-w-lg w-full p-8" onClick={(e) => e.stopPropagation()}>
                                         <div className="text-center mb-6">
                                             <div className="inline-block bg-yellow-100 text-yellow-800 px-6 py-3 rounded-lg mb-4">
-                                                <h3 className="text-2xl font-bold">⚠ Multiple Records Found</h3>
+                                                <h3 className="text-lg font-bold">⚠ Multiple Records Found</h3>
                                             </div>
                                             <p className="text-gray-700 mb-2">We found <strong>{result.students.length} students</strong> with the name:</p>
                                             <p className="text-xl font-bold text-blue-600 mb-4">{searchFirst} {searchLast}</p>
@@ -662,7 +663,7 @@
                                     <div className="bg-white rounded-xl max-w-5xl w-full max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                                         {result.error ? (
                                             <div className="p-8 text-center">
-                                                <h3 className="text-2xl font-bold mb-4 text-red-600">No Record Found</h3>
+                                                <h3 className="text-lg font-bold mb-4 text-red-600">No Record Found</h3>
                                                 <p className="mb-4 text-gray-700">{result.error}</p>
                                                 <button onClick={resetPublicSearch} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Close</button>
                                             </div>
@@ -671,92 +672,92 @@
                                                 <div key={i} className="p-8">
                                                     <div className="text-center mb-6">
                                                         <img src="logo.png" className="w-24 h-24 mx-auto mb-3" onError={(e) => e.target.style.display = 'none'} />
-                                                        <h2 className="text-2xl font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
+                                                        <h2 className="text-lg font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
                                                         <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
                                                         <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
                                                     </div>
 
                                                     {/* Row 1: Names */}
                                                     <div className="grid grid-cols-3 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">First Name:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.firstName}</div>
+                                                        <div className="bg-blue-50 p-2 rounded">
+                                                            <strong className="text-xs text-gray-500">First Name:</strong>
+                                                            <div className="text-lg font-bold mt-1">{s.firstName}</div>
                                                         </div>
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">Middle Name:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.middleName || 'N/A'}</div>
+                                                        <div className="bg-blue-50 p-2 rounded">
+                                                            <strong className="text-xs text-gray-500">Middle Name:</strong>
+                                                            <div className="text-lg font-bold mt-1">{s.middleName || 'N/A'}</div>
                                                         </div>
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">Last Name:</strong>
+                                                        <div className="bg-blue-50 p-2 rounded">
+                                                            <strong className="text-xs text-gray-500">Last Name:</strong>
                                                             <div className="text-lg font-bold mt-1">{s.lastName}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Row 2: LRN and DOB */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-yellow-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">LRN:</strong>
-                                                            <div className="text-xl font-bold mt-1">{s.lrn}</div>
+                                                        <div className="bg-yellow-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-500">LRN:</strong>
+                                                            <div className="text-base font-bold mt-1">{s.lrn}</div>
                                                         </div>
-                                                        <div className="bg-purple-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">Date of Birth:</strong>
-                                                            <div className="text-xl font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                                        <div className="bg-purple-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-500">Date of Birth:</strong>
+                                                            <div className="text-base font-bold mt-1">{new Date(s.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Row 3: School Year and Grade */}
                                                     <div className="grid grid-cols-2 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">School Year Last Attended:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.schoolYear}</div>
+                                                        <div className="bg-blue-50 p-2 rounded">
+                                                            <strong className="text-xs text-gray-500">School Year Last Attended:</strong>
+                                                            <div className="text-base font-bold mt-1">{s.schoolYear}</div>
                                                         </div>
-                                                        <div className="bg-indigo-50 p-4 rounded">
-                                                            <strong className="text-xs text-gray-600">Grade Last Attended:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
+                                                        <div className="bg-indigo-50 p-3 rounded">
+                                                            <strong className="text-xs text-gray-500">Grade Last Attended:</strong>
+                                                            <div className="text-base font-bold mt-1">{s.gradeLastAttended || 'N/A'}</div>
                                                         </div>
                                                     </div>
 
                                                     {/* Status */}
-                                                    <div className="bg-green-50 p-4 rounded mb-4">
-                                                        <strong className="text-xs text-gray-600">Status:</strong>
+                                                    <div className="bg-green-50 p-3 rounded mb-4">
+                                                        <strong className="text-xs text-gray-500">Status:</strong>
                                                         <div className="mt-2">
-                                                            <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-lg`}>{s.status}</span>
+                                                            <span className={`px-4 py-2 rounded ${statusColor(s.status)} font-bold text-base`}>{s.status}</span>
                                                         </div>
                                                     </div>
 
                                                     {/* SF10 RECEIPT LOG */}
 {(s.sf10DateReceived || s.sf10ReceivedFrom || s.sf10EndorsedTo || s.sf10DateEndorsed || s.sf10CopyReceived) && (
-    <div className="bg-teal-50 p-3 rounded mb-3">
-        <h4 className="font-bold mb-2 text-sm">SF10 RECEIPT LOG</h4>
+    <div className="bg-teal-50 p-2 rounded mb-3">
+        <h4 className="font-bold mb-1 text-xs">SF10 RECEIPT LOG</h4>
         <div className="grid grid-cols-3 gap-3 text-xs">
             {s.sf10CopyReceived && (
                 <div>
                     <strong className="text-gray-600">Copy Received:</strong>
-                    <div className="font-semibold mt-1">{s.sf10CopyReceived}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10CopyReceived}</div>
                 </div>
             )}
             {s.sf10DateReceived && (
                 <div>
                     <strong className="text-gray-600">Date Received:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10DateReceived).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                 </div>
             )}
             {s.sf10ReceivedFrom && (
                 <div>
                     <strong className="text-gray-600">Received From:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReceivedFrom}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReceivedFrom}</div>
                 </div>
             )}
             {s.sf10EndorsedTo && (
                 <div>
                     <strong className="text-gray-600">Endorsed To:</strong>
-                    <div className="font-semibold mt-1">{s.sf10EndorsedTo}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10EndorsedTo}</div>
                 </div>
             )}
             {s.sf10DateEndorsed && (
                 <div>
                     <strong className="text-gray-600">Date Endorsed:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10DateEndorsed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                 </div>
             )}
         </div>
@@ -765,43 +766,43 @@
 
                                                     {/* SF10 RELEASE LOG */}
 {(s.sf10ReleasedTo || s.sf10ReleaseDate || s.sf10CopyReleased || s.sf10TrackingNumber || s.sf10ReceivedBy || s.sf10ReceivedByDate) && (
-    <div className="bg-orange-50 p-3 rounded mb-3">
-        <h4 className="font-bold mb-2 text-sm">SF10 RELEASE LOG</h4>
+    <div className="bg-orange-50 p-2 rounded mb-3">
+        <h4 className="font-bold mb-1 text-xs">SF10 RELEASE LOG</h4>
         <div className="grid grid-cols-3 gap-3 text-xs">
             {s.sf10CopyReleased && (
                 <div>
                     <strong className="text-gray-600">Copy Released:</strong>
-                    <div className="font-semibold mt-1">{s.sf10CopyReleased}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10CopyReleased}</div>
                 </div>
             )}
             {s.sf10ReleaseDate && (
                 <div>
                     <strong className="text-gray-600">Release Date:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10ReleaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                 </div>
             )}
             {s.sf10ReleasedTo && (
                 <div>
                     <strong className="text-gray-600">Released To:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReleasedTo}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReleasedTo}</div>
                 </div>
             )}
             {s.sf10TrackingNumber && (
                 <div>
                     <strong className="text-gray-600">Tracking Number:</strong>
-                    <div className="font-semibold mt-1">{s.sf10TrackingNumber}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10TrackingNumber}</div>
                 </div>
             )}
             {s.sf10ReceivedBy && (
                 <div>
                     <strong className="text-gray-600">Received By:</strong>
-                    <div className="font-semibold mt-1">{s.sf10ReceivedBy}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{s.sf10ReceivedBy}</div>
                 </div>
             )}
             {s.sf10ReceivedByDate && (
                 <div>
                     <strong className="text-gray-600">Received Date:</strong>
-                    <div className="font-semibold mt-1">{new Date(s.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <div className="font-semibold mt-0.5 text-sm">{new Date(s.sf10ReceivedByDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                 </div>
             )}
         </div>
@@ -812,11 +813,11 @@
                                                     {(() => {
                                                         const status = getSF10Status(s);
                                                         return (
-                                                            <div className={`${status.color} p-3 rounded mb-3`}>
+                                                            <div className={`${status.color} p-2 rounded mb-3`}>
                                                                 <div className="flex items-start gap-2">
                                                                     <span className="text-2xl">{status.icon}</span>
                                                                     <div className="flex-1">
-                                                                        <p className="font-bold text-sm mb-1">{status.message}</p>
+                                                                        <p className="font-bold text-xs mb-1">{status.message}</p>
                                                                         <p className="text-xs text-gray-700">{status.sub}</p>
                                                                     </div>
                                                                 </div>
@@ -893,7 +894,7 @@
 
                         {/* Developer Credit */}
                         <div className="developer-credit">
-                            Developed by: <strong>ALI VILLAVERDE TELADA</strong>
+                            Copyright © January 2026 <strong>ALI VILLAVERDE TELADA</strong>
                         </div>
                     </div>
                 );
@@ -907,7 +908,7 @@
                     {/* Header */}
                     <div className="bg-white rounded-lg p-6 mb-6 flex justify-between items-center">
                         <div>
-                            <h1 className="text-2xl font-bold">SF10 Information System - Admin</h1>
+                            <h1 className="text-lg font-bold">SF10 Information System - Admin</h1>
                             <p>Ilayang Yuni Elementary School</p>
                         </div>
                         <button onClick={() => setIsAdmin(false)} className="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition border-2 border-blue-600">Logout</button>
@@ -951,7 +952,7 @@
                     {/* SEARCH VIEW */}
                     {adminView === 'search' && !adminSearchResults.length && (
                         <div className="bg-white rounded-lg p-8 shadow">
-                            <h2 className="text-2xl font-bold mb-6 text-center">Search for Student Record</h2>
+                            <h2 className="text-lg font-bold mb-6 text-center">Search for Student Record</h2>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-2 gap-4 mb-4">
                                     <div>
@@ -1010,7 +1011,7 @@
                         <div className="bg-white rounded-lg p-6 shadow">
                             {adminSearchResults.map((student, index) => (
                                 <div key={index} className="mb-6 p-6 border-2 rounded-lg">
-                                    <h3 className="text-2xl font-bold mb-4">✓ Record Found</h3>
+                                    <h3 className="text-lg font-bold mb-4">✓ Record Found</h3>
                                     <div className="space-y-2 mb-4">
                                         <div><strong>Full Name:</strong> {student.firstName} {student.middleName} {student.lastName}</div>
                                         <div><strong>LRN:</strong> {student.lrn}</div>
@@ -1056,7 +1057,7 @@
                     {/* NO RESULTS */}
                     {adminView === 'search' && adminSearchResults.length === 0 && (adminSearchFirst || adminSearchMiddle || adminSearchLast || adminSearchLRN) && !loading && (
                         <div className="bg-white rounded-lg p-8 shadow text-center">
-                            <h3 className="text-2xl font-bold mb-4">⚠ No Record Found</h3>
+                            <h3 className="text-lg font-bold mb-4">⚠ No Record Found</h3>
                             <p className="text-gray-600 mb-6">No student found with the provided information.</p>
                             <div className="max-w-md mx-auto space-y-3">
                                 <button
@@ -1076,7 +1077,7 @@
                     {/* ADD NEW STUDENT */}
                     {adminView === 'add' && (
                         <div className="bg-white rounded-lg p-6 shadow">
-                            <h3 className="text-2xl font-bold mb-6 text-center">➕ Add New Student Record</h3>
+                            <h3 className="text-lg font-bold mb-6 text-center">➕ Add New Student Record</h3>
                             
                             {/* Row 1: Names */}
                             <div className="grid grid-cols-3 gap-3 mb-3">
@@ -1147,7 +1148,7 @@
 </div>
 
                             {/* SF10 Document Upload */}
-                            <div className="bg-indigo-50 p-4 rounded mb-4">
+                            <div className="bg-indigo-50 p-3 rounded mb-4">
                                 <h4 className="font-semibold mb-2">SF10 Document Upload (Optional)</h4>
                                 <input
                                     type="file"
@@ -1168,8 +1169,8 @@
                     {/* EDIT STUDENT */}
                     {adminView === 'edit' && editStudent && (
                         <div className="bg-white rounded-lg p-6 shadow">
-                            <h3 className="text-2xl font-bold mb-6 text-center">📝 Update Student Record</h3>
-                            <div className="bg-blue-50 p-3 rounded mb-4">
+                            <h3 className="text-lg font-bold mb-6 text-center">📝 Update Student Record</h3>
+                            <div className="bg-blue-50 p-2 rounded mb-4">
                                 <h4 className="font-semibold mb-2">Student Information</h4>
                                 <p><strong>Name:</strong> {editStudent.firstName} {editStudent.middleName} {editStudent.lastName}</p>
                                 <p><strong>LRN:</strong> {editStudent.lrn}</p>
@@ -1244,7 +1245,7 @@
 </div>
 
                             {/* SF10 Document Management */}
-<div className="bg-indigo-50 p-4 rounded mb-4">
+<div className="bg-indigo-50 p-3 rounded mb-4">
     <h4 className="font-semibold mb-3">SF10 Document Management</h4>
     {editStudent.sf10DocumentUrl && (
         <div className="mb-3 p-3 bg-white rounded border">
@@ -1352,7 +1353,7 @@
 
                     {/* Developer Credit */}
                     <div className="developer-credit">
-                        Developed by: <strong>ALI VILLAVERDE TELADA</strong>
+                        Copyright © January 2026 <strong>ALI VILLAVERDE TELADA</strong>
                     </div>
                 </div>
             );
