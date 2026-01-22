@@ -677,23 +677,22 @@
                                                     </div>
 
                                                     {/* Row 1: Names */}
-                                                    <div className="grid grid-cols-3 gap-4 mb-4">
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">First Name:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.firstName}</div>
-                                                        </div>
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">Middle Name:</strong>
-                                                            <div className="text-2xl font-bold mt-1">{s.middleName || 'N/A'}</div>
-                                                        </div>
-                                                        <div className="bg-blue-50 p-3 rounded">
-                                                            <strong className="text-xs text-gray-600">Last Name:</strong>
-                                                            <div className="text-lg font-bold mt-1">{s.lastName}</div>
-                                                        </div>
-                                                    </div>
+<div className="grid grid-cols-3 gap-4 mb-4">
+    <div className="bg-blue-50 p-3 rounded">
+        <strong className="text-xs text-gray-600">First Name:</strong>
+        <div className="text-2xl font-bold mt-1">{s.firstName}</div>
+    </div>
+    <div className="bg-blue-50 p-3 rounded">
+        <strong className="text-xs text-gray-600">Middle Name:</strong>
+        <div className="text-2xl font-bold mt-1">{s.middleName || 'N/A'}</div>
+    </div>
+    <div className="bg-blue-50 p-3 rounded">
+        <strong className="text-xs text-gray-600">Last Name:</strong>
+        <div className="text-lg font-bold mt-1">{s.lastName}</div>
+    </div>
+</div>
 
-                                                    
-                                                    {/* SF10 Availability Message */}
+{/* SF10 Availability Message */}
                                                     {(() => {
                                                         const status = getSF10Status(s);
                                                         return (
@@ -708,22 +707,6 @@
                                                             </div>
                                                         );
                                                     })()}
-
-{/* SF10 Availability Message */}
-{(() => {
-    const status = getSF10Status(s);
-    return (
-        <div className={`${status.color} p-3 rounded mb-3`}>
-            <div className="flex items-start gap-2">
-                <span className="text-2xl">{status.icon}</span>
-                <div className="flex-1">
-                    <p className="font-bold text-sm mb-1">{status.message}</p>
-                    <p className="text-xs text-gray-700">{status.sub}</p>
-                </div>
-            </div>
-        </div>
-    );
-})()}
 
 {/* Data Privacy Act Notice */}
 <div className="bg-blue-100 border-2 border-blue-300 p-4 rounded mb-4">
@@ -1417,6 +1400,7 @@
     </script>
 </body>
 </html>
+
 
 
 
