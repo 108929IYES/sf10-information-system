@@ -42,7 +42,7 @@
 
         function App() {
             // Replace with your actual Google Apps Script URL
-            const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlGaAj_tRuqhVG4SjUbLS97-iJVTXVjB-OHn0lNHja_NdPzW8QmrR0variIQMFwqSFRw/exec';
+            const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQtY-ltFU6VSEBZR0bfpoam7pJn0rFs5PUEa86B8bmFXkG9Buw7mj6rmo7UB3fT_XC3Q/exec';
 
             // State management
             const [loading, setLoading] = useState(false);
@@ -82,6 +82,14 @@
             });
             const [editStudent, setEditStudent] = useState(null);
             const [uploadedFile, setUploadedFile] = useState(null);
+	const [hasSearched, setHasSearched] = useState(false);
+
+// Password management states
+const [showChangePassword, setShowChangePassword] = useState(false);
+const [oldPassword, setOldPassword] = useState('');
+const [newPassword, setNewPassword] = useState('');
+const [confirmPassword, setConfirmPassword] = useState('');
+const [passwordError, setPasswordError] = useState('');
 
             useEffect(() => {
                 if (isAdmin) loadData();
@@ -241,6 +249,7 @@
                 }
 
                 setLoading(true);
+setHasSearched(true);
                 try {
                     const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=search&firstName=${f}&middleName=${m}&lastName=${l}&lrn=${lrn}`);
                     const data = await res.json();
@@ -428,25 +437,71 @@
             };
 
             const sendPasswordReset = async () => {
-                setLoading(true);
-                try {
-                    const res = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'sendPasswordReset' })
-                    });
-                    const data = await res.json();
+    setLoading(true);
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'sendPasswordReset' })
+        });
+        const data = await res.json();
 
-                    if (data.success) {
-                        alert('Password reset link has been sent to 108929@deped.gov.ph');
-                        setShowForgotPassword(false);
-                    } else {
-                        alert('Error sending reset email: ' + data.message);
-                    }
-                } catch (e) {
-                    alert('Error sending reset email');
-                }
-                setLoading(false);
-            };
+        if (data.success) {
+            alert('A temporary password has been sent to 108929@deped.gov.ph. Please check your email and login with the temporary password. You will be required to change it after login.');
+            setShowForgotPassword(false);
+        } else {
+            alert('Error sending reset email: ' + data.message);
+        }
+    } catch (e) {
+        alert('Error sending reset email: ' + e.message);
+    }
+    setLoading(false);
+};
+
+const changePassword = async () => {
+    setPasswordError('');
+    
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        setPasswordError('Please fill all fields');
+        return;
+    }
+    
+    if (newPassword.length < 8) {
+        setPasswordError('New password must be at least 8 characters');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        setPasswordError('New passwords do not match');
+        return;
+    }
+    
+    setLoading(true);
+    try {
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                action: 'changePassword',
+                oldPassword: oldPassword,
+                newPassword: newPassword
+            })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            alert('Password changed successfully! Please login with your new password.');
+            setShowChangePassword(false);
+            setIsAdmin(false);
+            setOldPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } else {
+            setPasswordError(data.message || 'Error changing password');
+        }
+    } catch (e) {
+        setPasswordError('Error connecting to server');
+    }
+    setLoading(false);
+};
 
             const resetAdminSearch = () => {
                 setAdminView('search');
@@ -455,6 +510,7 @@
                 setAdminSearchLast('');
                 setAdminSearchLRN('');
                 setAdminSearchResults([]);
+setHasSearched(false);
                 setEditStudent(null);
                 setNewStudent({
         firstName: '', middleName: '', lastName: '', dateOfBirth: '', lrn: '',
@@ -807,13 +863,24 @@
                     {loading && <div className="fixed top-4 right-4 bg-white text-blue-600 px-4 py-2 rounded shadow z-50">Loading...</div>}
 
                     {/* Header */}
-                    <div className="bg-white rounded-lg p-6 mb-6 flex justify-between items-center">
-                        <div>
-                            <h1 className="text-lg font-bold">SF10 Information System - Admin</h1>
-                            <p>Ilayang Yuni Elementary School</p>
-                        </div>
-                        <button onClick={() => setIsAdmin(false)} className="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition border-2 border-blue-600">Logout</button>
-                    </div>
+<div className="bg-white rounded-lg p-6 mb-6 flex justify-between items-center">
+    <div>
+        <h1 className="text-lg font-bold">SF10 Information System - Admin</h1>
+        <p>Ilayang Yuni Elementary School</p>
+    </div>
+    <div className="flex gap-2">
+        <button 
+            onClick={() => setShowChangePassword(true)} 
+            className="bg-yellow-500 text-white px-4 py-2 rounded font-semibold hover:bg-yellow-600 transition">
+            🔒 Change Password
+        </button>
+        <button 
+            onClick={() => setIsAdmin(false)} 
+            className="bg-white text-blue-600 px-4 py-2 rounded font-semibold hover:bg-gray-100 transition border-2 border-blue-600">
+            Logout
+        </button>
+    </div>
+</div>
 
                     {/* Statistics */}
                     <div className="grid grid-cols-4 gap-4 mb-6">
@@ -903,6 +970,39 @@
                                     className="w-full bg-blue-600 text-white p-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition">
                                     🔍 Search Student
                                 </button>
+                            </div>
+                        </div>
+                    )}
+
+                  {/* NO RESULTS FOUND - MODAL */}
+                    {adminView === 'search' && hasSearched && adminSearchResults.length === 0 && !loading && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-xl p-8 max-w-lg w-full shadow-2xl">
+                                <div className="text-center mb-6">
+                                    <div className="text-6xl mb-4">🔍</div>
+                                    <h3 className="text-2xl font-bold text-gray-700 mb-2">No Record Found</h3>
+                                    <p className="text-gray-600 mb-4">
+                                        No student record found matching your search:
+                                    </p>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        {adminSearchFirst && <p className="mb-1"><strong>First Name:</strong> {adminSearchFirst}</p>}
+                                        {adminSearchMiddle && <p className="mb-1"><strong>Middle Name:</strong> {adminSearchMiddle}</p>}
+                                        {adminSearchLast && <p className="mb-1"><strong>Last Name:</strong> {adminSearchLast}</p>}
+                                        {adminSearchLRN && <p className="mb-1"><strong>LRN:</strong> {adminSearchLRN}</p>}
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={startAddNew}
+                                        className="w-full bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
+                                        ➕ Create New Student Record
+                                    </button>
+                                    <button
+                                        onClick={resetAdminSearch}
+                                        className="w-full bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+                                        ← Back to Search
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1119,7 +1219,7 @@
 
                             {/* Row 3: School Year and Grade */}
                             <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><select value={newStudent.schoolYear} onChange={(e) => setNewStudent({ ...newStudent, schoolYear: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
+                                <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><input type="text" value={newStudent.schoolYear} onChange={(e) => setNewStudent({ ...newStudent, schoolYear: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="e.g. 2024-2025" /></div>
                                 <div><label className="block mb-1 text-sm font-medium">Grade Last Attended</label><select value={newStudent.gradeLastAttended} onChange={(e) => setNewStudent({ ...newStudent, gradeLastAttended: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option value="">Select Grade</option><option>Kinder</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option></select></div>
                             </div>
 
@@ -1191,109 +1291,118 @@
                         </div>
                     )}
 
-                    {/* EDIT STUDENT */}
-                    {adminView === 'edit' && editStudent && (
-                        <div className="bg-white rounded-lg p-6 shadow">
-                            <h3 className="text-lg font-bold mb-6 text-center">📝 Update Student Record</h3>
-                            <div className="bg-blue-50 p-2 rounded mb-4">
-                                <h4 className="font-semibold mb-2">Student Information</h4>
-                                <p><strong>Name:</strong> {editStudent.firstName} {editStudent.middleName} {editStudent.lastName}</p>
-                                <p><strong>LRN:</strong> {editStudent.lrn}</p>
-                            </div>
+                    {/* EDIT STUDENT - MODAL VERSION */}
+{adminView === 'edit' && editStudent && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="bg-white rounded-xl p-6 shadow-2xl max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">📝 Update Student Record</h3>
+                <button 
+                    onClick={resetAdminSearch} 
+                    className="text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                >&times;</button>
+            </div>
+            
+            <div className="bg-blue-50 p-2 rounded mb-4">
+                <h4 className="font-semibold mb-2">Student Information</h4>
+                <p><strong>Name:</strong> {editStudent.firstName} {editStudent.middleName} {editStudent.lastName}</p>
+                <p><strong>LRN:</strong> {editStudent.lrn}</p>
+            </div>
 
-                            {/* Row 1: Names */}
-                            <div className="grid grid-cols-3 gap-3 mb-3">
-                                <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={editStudent.firstName} onChange={(e) => setEditStudent({ ...editStudent, firstName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
-                                <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={editStudent.middleName || ''} onChange={(e) => setEditStudent({ ...editStudent, middleName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
-                                <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={editStudent.lastName} onChange={(e) => setEditStudent({ ...editStudent, lastName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
-                            </div>
+            {/* Row 1: Names */}
+            <div className="grid grid-cols-3 gap-3 mb-3">
+                <div><label className="block mb-1 text-sm font-medium">First Name *</label><input type="text" value={editStudent.firstName} onChange={(e) => setEditStudent({ ...editStudent, firstName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+                <div><label className="block mb-1 text-sm font-medium">Middle Name (or N/A if none)</label><input type="text" value={editStudent.middleName || ''} onChange={(e) => setEditStudent({ ...editStudent, middleName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="N/A" /></div>
+                <div><label className="block mb-1 text-sm font-medium">Last Name *</label><input type="text" value={editStudent.lastName} onChange={(e) => setEditStudent({ ...editStudent, lastName: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+            </div>
 
-                            {/* Row 2: LRN and DOB */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div><label className="block mb-1 text-sm font-medium">LRN * (or N/A if none)</label><input type="text" value={editStudent.lrn} onChange={(e) => setEditStudent({ ...editStudent, lrn: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" maxLength="12" placeholder="N/A" /></div>
-                                <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={editStudent.dateOfBirth} onChange={(e) => setEditStudent({ ...editStudent, dateOfBirth: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
-                            </div>
+            {/* Row 2: LRN and DOB */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="block mb-1 text-sm font-medium">LRN * (or N/A if none)</label><input type="text" value={editStudent.lrn} onChange={(e) => setEditStudent({ ...editStudent, lrn: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" maxLength="12" placeholder="N/A" /></div>
+                <div><label className="block mb-1 text-sm font-medium">Date of Birth *</label><input type="date" value={editStudent.dateOfBirth} onChange={(e) => setEditStudent({ ...editStudent, dateOfBirth: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" /></div>
+            </div>
 
-                            {/* Row 3: School Year and Grade */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><select value={editStudent.schoolYear} onChange={(e) => setEditStudent({ ...editStudent, schoolYear: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>2024-2025</option><option>2025-2026</option><option>2026-2027</option><option>2023-2024</option><option>2022-2023</option></select></div>
-                                <div><label className="block mb-1 text-sm font-medium">Grade Last Attended</label><select value={editStudent.gradeLastAttended || ''} onChange={(e) => setEditStudent({ ...editStudent, gradeLastAttended: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option value="">Select Grade</option><option>Kinder</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option></select></div>
-                            </div>
+            {/* Row 3: School Year and Grade */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="block mb-1 text-sm font-medium">School Year Last Attended *</label><input type="text" value={editStudent.schoolYear} onChange={(e) => setEditStudent({ ...editStudent, schoolYear: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none" placeholder="e.g. 2024-2025" /></div>
+                <div><label className="block mb-1 text-sm font-medium">Grade Last Attended</label><select value={editStudent.gradeLastAttended || ''} onChange={(e) => setEditStudent({ ...editStudent, gradeLastAttended: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option value="">Select Grade</option><option>Kinder</option><option>Grade 1</option><option>Grade 2</option><option>Grade 3</option><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option></select></div>
+            </div>
 
-                            {/* Status */}
-                            <div className="mb-4">
-                                <label className="block mb-1 text-sm font-medium">Status *</label>
-                                <select value={editStudent.status} onChange={(e) => setEditStudent({ ...editStudent, status: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select>
-                            </div>
+            {/* Status */}
+            <div className="mb-4">
+                <label className="block mb-1 text-sm font-medium">Status *</label>
+                <select value={editStudent.status} onChange={(e) => setEditStudent({ ...editStudent, status: e.target.value })} className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"><option>Graduated</option><option>Transferred Out</option><option>Dropped</option><option>Failed</option><option>Stopped</option></select>
+            </div>
 
-                            {/* SF10 RELEASE LOG (Optional) */}
-<div className="bg-orange-50 p-4 rounded mb-4">
-    <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
-    <div className="grid grid-cols-3 gap-3 mb-3">
-        <div>
-            <label className="block mb-1 text-sm">SF10 Copy Released</label>
-            <select value={editStudent.sf10CopyReleased || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReleased: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
-                <option value="">Select Type</option>
-                <option value="Original">Original</option>
-                <option value="Authenticated">Authenticated</option>
-            </select>
+            {/* SF10 RELEASE LOG (Optional) */}
+            <div className="bg-orange-50 p-4 rounded mb-4">
+                <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label className="block mb-1 text-sm">SF10 Copy Released</label>
+                        <select value={editStudent.sf10CopyReleased || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReleased: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                            <option value="">Select Type</option>
+                            <option value="Original">Original</option>
+                            <option value="Authenticated">Authenticated</option>
+                        </select>
+                    </div>
+                    <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={editStudent.sf10ReleaseDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                    <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={editStudent.sf10ReleasedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                    <div><label className="block mb-1 text-sm">Tracking Number</label><input type="text" value={editStudent.sf10TrackingNumber || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10TrackingNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. TRK-2025-001" /></div>
+                    <div><label className="block mb-1 text-sm">Received By</label><input type="text" value={editStudent.sf10ReceivedBy || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedBy: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name of recipient" /></div>
+                    <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={editStudent.sf10ReceivedByDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedByDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                </div>
+            </div>
+
+            {/* SF10 RECEIPT LOG (Optional) */}
+            <div className="bg-teal-50 p-4 rounded mb-4">
+                <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label className="block mb-1 text-sm">SF10 Copy Received</label>
+                        <select value={editStudent.sf10CopyReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
+                            <option value="">Select Type</option>
+                            <option value="Original">Original</option>
+                            <option value="Authenticated">Authenticated</option>
+                        </select>
+                    </div>
+                    <div><label className="block mb-1 text-sm">Date Received</label><input type="date" value={editStudent.sf10DateReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                    <div><label className="block mb-1 text-sm">Received From</label><input type="text" value={editStudent.sf10ReceivedFrom || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedFrom: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                    <div><label className="block mb-1 text-sm">Endorsed To</label><input type="text" value={editStudent.sf10EndorsedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10EndorsedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name" /></div>
+                    <div><label className="block mb-1 text-sm">Date Endorsed</label><input type="date" value={editStudent.sf10DateEndorsed || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateEndorsed: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
+                </div>
+            </div>
+
+            {/* SF10 Document Management */}
+            <div className="bg-indigo-50 p-3 rounded mb-4">
+                <h4 className="font-semibold mb-3">SF10 Document Management</h4>
+                {editStudent.sf10DocumentUrl && (
+                    <div className="mb-3 p-3 bg-white rounded border">
+                        <p className="text-sm mb-2"><strong>Current Document:</strong> Document uploaded</p>
+                        <button onClick={() => setEditStudent({ ...editStudent, sf10DocumentUrl: '' })} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition">🗑️ Remove Document</button>
+                    </div>
+                )}
+                <label className="block mb-1 text-sm font-medium">Upload New SF10 Document (PDF)</label>
+                <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileSelect}
+                    className="w-full p-2 border rounded focus:border-blue-500 outline-none"
+                />
+                {uploadProgress && <p className="text-sm mt-2 text-gray-600">{uploadProgress}</p>}
+            </div>
+
+            <div className="flex gap-2">
+                <button onClick={updateStudent} className="flex-1 bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">✓ Update Record</button>
+                <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400 transition">Cancel</button>
+            </div>
         </div>
-        <div><label className="block mb-1 text-sm">Release Date</label><input type="date" value={editStudent.sf10ReleaseDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleaseDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-        <div><label className="block mb-1 text-sm">Released To</label><input type="text" value={editStudent.sf10ReleasedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReleasedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
     </div>
-    <div className="grid grid-cols-3 gap-3">
-        <div><label className="block mb-1 text-sm">Tracking Number</label><input type="text" value={editStudent.sf10TrackingNumber || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10TrackingNumber: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="e.g. TRK-2025-001" /></div>
-        <div><label className="block mb-1 text-sm">Received By</label><input type="text" value={editStudent.sf10ReceivedBy || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedBy: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name of recipient" /></div>
-        <div><label className="block mb-1 text-sm">Received Date</label><input type="date" value={editStudent.sf10ReceivedByDate || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedByDate: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-    </div>
-</div>
-
-                            {/* SF10 RECEIPT LOG (Optional) */}
-<div className="bg-teal-50 p-4 rounded mb-4">
-    <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
-    <div className="grid grid-cols-3 gap-3 mb-3">
-        <div>
-            <label className="block mb-1 text-sm">SF10 Copy Received</label>
-            <select value={editStudent.sf10CopyReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
-                <option value="">Select Type</option>
-                <option value="Original">Original</option>
-                <option value="Authenticated">Authenticated</option>
-            </select>
-        </div>
-        <div><label className="block mb-1 text-sm">Date Received</label><input type="date" value={editStudent.sf10DateReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-        <div><label className="block mb-1 text-sm">Received From</label><input type="text" value={editStudent.sf10ReceivedFrom || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10ReceivedFrom: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="School/Person" /></div>
-    </div>
-    <div className="grid grid-cols-2 gap-3">
-        <div><label className="block mb-1 text-sm">Endorsed To</label><input type="text" value={editStudent.sf10EndorsedTo || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10EndorsedTo: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" placeholder="Name" /></div>
-        <div><label className="block mb-1 text-sm">Date Endorsed</label><input type="date" value={editStudent.sf10DateEndorsed || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10DateEndorsed: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none" /></div>
-    </div>
-</div>
-
-                            {/* SF10 Document Management */}
-<div className="bg-indigo-50 p-3 rounded mb-4">
-    <h4 className="font-semibold mb-3">SF10 Document Management</h4>
-    {editStudent.sf10DocumentUrl && (
-        <div className="mb-3 p-3 bg-white rounded border">
-            <p className="text-sm mb-2"><strong>Current Document:</strong> Document uploaded</p>
-            <button onClick={() => setEditStudent({ ...editStudent, sf10DocumentUrl: '' })} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition">🗑️ Remove Document</button>
-        </div>
-    )}
-                                <label className="block mb-1 text-sm font-medium">Upload New SF10 Document (PDF)</label>
-                                <input
-                                    type="file"
-                                    accept="application/pdf"
-                                    onChange={handleFileSelect}
-                                    className="w-full p-2 border rounded focus:border-blue-500 outline-none"
-                                />
-                                {uploadProgress && <p className="text-sm mt-2 text-gray-600">{uploadProgress}</p>}
-                            </div>
-
-                            <div className="flex gap-2">
-                                <button onClick={updateStudent} className="flex-1 bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700 transition">✓ Update Record</button>
-                                <button onClick={resetAdminSearch} className="flex-1 bg-gray-300 px-6 py-3 rounded font-semibold hover:bg-gray-400 transition">Cancel</button>
-                            </div>
-                        </div>
-                    )}
+)}
 
                     {/* LIST VIEW */}
                     {adminView === 'list' && (
@@ -1376,6 +1485,92 @@
                         </div>
                     )}
 
+{/* Change Password Modal */}
+                    {showChangePassword && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                                <h3 className="text-xl font-bold mb-4">🔒 Change Password</h3>
+                                
+                                <div className="mb-4">
+                                    <label className="block mb-2 text-sm font-medium">Current Password</label>
+                                    <input
+                                        type="password"
+                                        value={oldPassword}
+                                        onChange={(e) => {
+                                            setOldPassword(e.target.value);
+                                            setPasswordError('');
+                                        }}
+                                        className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"
+                                        placeholder="Enter current password"
+                                    />
+                                </div>
+                                
+                                <div className="mb-4">
+                                    <label className="block mb-2 text-sm font-medium">New Password</label>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => {
+                                            setNewPassword(e.target.value);
+                                            setPasswordError('');
+                                        }}
+                                        className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"
+                                        placeholder="At least 8 characters"
+                                    />
+                                </div>
+                                
+                                <div className="mb-4">
+                                    <label className="block mb-2 text-sm font-medium">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => {
+                                            setConfirmPassword(e.target.value);
+                                            setPasswordError('');
+                                        }}
+                                        onKeyPress={(e) => e.key === 'Enter' && changePassword()}
+                                        className="w-full p-2 border-2 rounded focus:border-blue-500 outline-none"
+                                        placeholder="Re-enter new password"
+                                    />
+                                </div>
+                                
+                                {passwordError && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+                                        <p className="text-red-600 text-sm">{passwordError}</p>
+                                    </div>
+                                )}
+                                
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={changePassword} 
+                                        className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition">
+                                        Change Password
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            setShowChangePassword(false);
+                                            setOldPassword('');
+                                            setNewPassword('');
+                                            setConfirmPassword('');
+                                            setPasswordError('');
+                                        }} 
+                                        className="flex-1 bg-gray-300 p-2 rounded hover:bg-gray-400 transition">
+                                        Cancel
+                                    </button>
+                                </div>
+                                
+                                <div className="mt-4 p-3 bg-blue-50 rounded">
+                                    <p className="text-xs text-gray-600">
+                                        <strong>Security Tips:</strong><br/>
+                                        • Use at least 8 characters<br/>
+                                        • Mix letters, numbers, and symbols<br/>
+                                        • Don't share your password
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Developer Credit */}
                     <div className="developer-credit">
                         Copyright © January 2026 <strong>ALI VILLAVERDE TELADA</strong>
@@ -1388,5 +1583,4 @@
     </script>
 </body>
 </html>
-
 
