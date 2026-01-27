@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Permanent Record Information System - Ilayang Yuni Elementary School</title>
+    <title>Permanent Record Information System and Management (PRISM) - Ilayang Yuni Elementary School</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -128,13 +128,13 @@ const [passwordError, setPasswordError] = useState('');
                 setLoading(false);
         };
 
-        // Get SF10 availability status for public view
+        // Get SF10/F137 availability status for public view
         const getSF10Status = (student) => {
                 if (!student.sf10CopyReleased) {
                     return { 
                         icon: '✅', 
                         color: 'bg-green-50 border-2 border-green-200', 
-                        message: 'SF10 ORIGINAL COPY is available at the school.', 
+                        message: 'SF10/F137 ORIGINAL COPY is available at the school.', 
                         sub: 'Please proceed to the Principal\'s Office to request your document.' 
                     };
                 }
@@ -153,7 +153,7 @@ const [passwordError, setPasswordError] = useState('');
                     return { 
                         icon: '✅', 
                         color: 'bg-blue-50 border-2 border-blue-200', 
-                        message: 'An authenticated SF10 has been released. The original copy is still available. You may request an authenticated copy at the Principal\'s Office.', 
+                        message: 'An authenticated SF10/F137 has been released. The original copy is still available. You may request an authenticated copy at the Principal\'s Office.', 
                         sub: '' 
                     };
                 }
@@ -161,7 +161,7 @@ const [passwordError, setPasswordError] = useState('');
                 return { 
                     icon: 'ℹ️', 
                     color: 'bg-blue-50 border-2 border-blue-200', 
-                    message: 'SF10 document is being processed.', 
+                    message: 'SF10/F137 document is being processed.', 
                     sub: 'Please contact the Principal\'s Office for more information.' 
                 };
             };
@@ -627,11 +627,11 @@ setHasSearched(false);
                             <div className="text-center mb-8">
                                 <img src="logo.png" className="w-32 h-32 mx-auto mb-4" onError={(e) => e.target.style.display = 'none'} />
                                 <h1 className="text-4xl font-bold text-blue-600 mb-2">ILAYANG YUNI ELEMENTARY SCHOOL</h1>
-                                <h2 className="text-xl font-semibold text-blue-600 mb-1">Permanent Record Information System</h2>
-                                <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
+<p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
+                                <h2 className="text-xl font-semibold text-blue-600 mb-1">PERMANENT RECORD INFORMATION SYSTEM AND MANAGEMENT (PRISM)</h2>
                             </div>
                             <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-                                <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10 Record</h3>
+                                <h3 className="text-2xl font-semibold mb-6 text-center">Search SF10/F137 Record</h3>
 
                                 {/* Search Method Radio Buttons */}
                                 <div className="mb-6">
@@ -777,7 +777,7 @@ setHasSearched(false);
                                                         <img src="logo.png" className="w-24 h-24 mx-auto mb-3" onError={(e) => e.target.style.display = 'none'} />
                                                         <h2 className="text-lg font-bold text-blue-600">ILAYANG YUNI ELEMENTARY SCHOOL</h2>
                                                         <p className="text-gray-600 font-semibold">Sa Ilayang Yuni, Lahat RESPONSABLE</p>
-                                                        <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10 RECORD FOUND</div>
+                                                        <div className="mt-3 inline-block bg-blue-600 text-white px-4 py-1 rounded-full">SF10/F137 RECORD FOUND</div>
                                                     </div>
 
                                                     {/* Row 1: Names */}
@@ -916,7 +916,7 @@ setHasSearched(false);
                     {/* Header */}
 <div className="bg-white rounded-lg p-6 mb-6 flex justify-between items-center">
     <div>
-        <h1 className="text-lg font-bold">Permanent Record Information System - Admin</h1>
+        <h1 className="text-lg font-bold">PERMANENT RECORD INFORMATION SYSTEM AND MANAGEMENT (PRISM) - Admin</h1>
         <p>Ilayang Yuni Elementary School</p>
     </div>
     <div className="flex gap-2">
@@ -1101,7 +1101,7 @@ setHasSearched(false);
 
             {/* COLUMN 2: SF10 STATUS */}
             <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                <h4 className="font-bold text-sm mb-3 text-green-800 border-b-2 border-green-300 pb-2">📄 SF10 STATUS</h4>
+                <h4 className="font-bold text-sm mb-3 text-green-800 border-b-2 border-green-300 pb-2">📄 SF10/F137 STATUS</h4>
                 <div className="space-y-2 text-sm">
                     <div>
                         <strong className="text-xs text-gray-600">Availability:</strong>
@@ -1140,7 +1140,7 @@ setHasSearched(false);
 
             {/* COLUMN 3: RECEIPT LOG */}
             <div className="bg-teal-50 p-4 rounded-lg border-2 border-teal-200">
-                <h4 className="font-bold text-sm mb-3 text-teal-800 border-b-2 border-teal-300 pb-2">📥 RECEIPT LOG</h4>
+                <h4 className="font-bold text-sm mb-3 text-teal-800 border-b-2 border-teal-300 pb-2">📥 SF10/F137 RECEIPT LOG</h4>
                 <div className="space-y-2 text-sm">
                     {student.sf10CopyReceived && (
                         <div>
@@ -1180,7 +1180,7 @@ setHasSearched(false);
 
             {/* COLUMN 4: RELEASE LOG */}
             <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
-                <h4 className="font-bold text-sm mb-3 text-orange-800 border-b-2 border-orange-300 pb-2">📤 RELEASE LOG</h4>
+                <h4 className="font-bold text-sm mb-3 text-orange-800 border-b-2 border-orange-300 pb-2">📤 SF10/F137 RELEASE LOG</h4>
                 <div className="space-y-2 text-sm">
                     {student.sf10CopyReleased && (
                         <div>
@@ -1282,7 +1282,7 @@ setHasSearched(false);
 
                             {/* SF10 RELEASE LOG (Optional) */}
 <div className="bg-orange-50 p-4 rounded mb-4">
-    <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
+    <h4 className="font-semibold mb-2">SF10/F137 RELEASE LOG (Optional)</h4>
     <div className="grid grid-cols-3 gap-3 mb-3">
         <div>
             <label className="block mb-1 text-sm">SF10 Copy Released</label>
@@ -1304,7 +1304,7 @@ setHasSearched(false);
 
                             {/* SF10 RECEIPT LOG (Optional) */}
 <div className="bg-teal-50 p-4 rounded mb-4">
-    <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
+    <h4 className="font-semibold mb-2">SF10/F137 RECEIPT LOG (Optional)</h4>
     <div className="grid grid-cols-3 gap-3 mb-3">
         <div>
             <label className="block mb-1 text-sm">SF10 Copy Received</label>
@@ -1325,7 +1325,7 @@ setHasSearched(false);
 
                             {/* SF10 Document Upload */}
                             <div className="bg-indigo-50 p-3 rounded mb-4">
-                                <h4 className="font-semibold mb-2">SF10 Document Upload (Optional)</h4>
+                                <h4 className="font-semibold mb-2">SF10/F137 Document Upload (Optional)</h4>
                                 <input
                                     type="file"
                                     accept="application/pdf"
@@ -1387,10 +1387,10 @@ setHasSearched(false);
 
             {/* SF10 RELEASE LOG (Optional) */}
             <div className="bg-orange-50 p-4 rounded mb-4">
-                <h4 className="font-semibold mb-2">SF10 RELEASE LOG (Optional)</h4>
+                <h4 className="font-semibold mb-2">SF10/F137 RELEASE LOG (Optional)</h4>
                 <div className="grid grid-cols-3 gap-3 mb-3">
                     <div>
-                        <label className="block mb-1 text-sm">SF10 Copy Released</label>
+                        <label className="block mb-1 text-sm">SF10/F137 Copy Released</label>
                         <select value={editStudent.sf10CopyReleased || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReleased: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
                             <option value="">Select Type</option>
                             <option value="Original">Original</option>
@@ -1409,10 +1409,10 @@ setHasSearched(false);
 
             {/* SF10 RECEIPT LOG (Optional) */}
             <div className="bg-teal-50 p-4 rounded mb-4">
-                <h4 className="font-semibold mb-2">SF10 RECEIPT LOG (Optional)</h4>
+                <h4 className="font-semibold mb-2">SF10/F137 RECEIPT LOG (Optional)</h4>
                 <div className="grid grid-cols-3 gap-3 mb-3">
                     <div>
-                        <label className="block mb-1 text-sm">SF10 Copy Received</label>
+                        <label className="block mb-1 text-sm">SF10/F137 Copy Received</label>
                         <select value={editStudent.sf10CopyReceived || ''} onChange={(e) => setEditStudent({ ...editStudent, sf10CopyReceived: e.target.value })} className="w-full p-2 border rounded focus:border-blue-500 outline-none">
                             <option value="">Select Type</option>
                             <option value="Original">Original</option>
@@ -1430,14 +1430,14 @@ setHasSearched(false);
 
             {/* SF10 Document Management */}
             <div className="bg-indigo-50 p-3 rounded mb-4">
-                <h4 className="font-semibold mb-3">SF10 Document Management</h4>
+                <h4 className="font-semibold mb-3">SF10/F137 Document Management</h4>
                 {editStudent.sf10DocumentUrl && (
                     <div className="mb-3 p-3 bg-white rounded border">
                         <p className="text-sm mb-2"><strong>Current Document:</strong> Document uploaded</p>
                         <button onClick={() => setEditStudent({ ...editStudent, sf10DocumentUrl: '' })} className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition">🗑️ Remove Document</button>
                     </div>
                 )}
-                <label className="block mb-1 text-sm font-medium">Upload New SF10 Document (PDF)</label>
+                <label className="block mb-1 text-sm font-medium">Upload New SF10/F137 Document (PDF)</label>
                 <input
                     type="file"
                     accept="application/pdf"
@@ -1468,7 +1468,7 @@ setHasSearched(false);
                                             <th className="p-3 text-left text-xs font-semibold">School Year Last Attended</th>
                                             <th className="p-3 text-left text-xs font-semibold">Grade</th>
                                             <th className="p-3 text-left text-xs font-semibold">Status</th>
-                                            <th className="p-3 text-left text-xs font-semibold">SF10 Document</th>
+                                            <th className="p-3 text-left text-xs font-semibold">SF10/F137 Document</th>
                                             <th className="p-3 text-left text-xs font-semibold">Actions</th>
                                         </tr>
                                     </thead>
@@ -1522,7 +1522,7 @@ setHasSearched(false);
                         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50" onClick={() => setShowPdfModal(false)}>
                             <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">SF10 Document Preview</h3>
+                                    <h3 className="text-xl font-bold">SF10/F137 Document Preview</h3>
                                     <button onClick={() => setShowPdfModal(false)} className="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
                                 </div>
                                 <div className="pdf-preview-container">
